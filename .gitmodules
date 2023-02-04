@@ -1,3 +1,9 @@
 [submodule "rules"]
-	path = rules
+	path = engine
 	url = https://github.com/BattlesnakeOfficial/rules.git
+[submodule "snakes/untimely-neglected-wearable"]
+	path = snakes/untimely-neglected-wearable
+	url = https://github.com/altersaddle/untimely-neglected-wearable.git
+[submodule "board"]
+	path = board
+	url = https://github.com/BattlesnakeOfficial/board.git
