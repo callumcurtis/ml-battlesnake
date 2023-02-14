@@ -1,0 +1,6 @@
+# There are an arbitrary number of snakes.
+# Each snake has a name and a path to the snake's executable.
+snakes: [
+  {name: "rattley", path: "${{ SNAKES_DIR }}/untimely-neglected-wearable"},
+  {name: "anacondie", path: "${{ SNAKES_DIR }}/untimely-neglected-wearable"}
+]
