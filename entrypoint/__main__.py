@@ -61,13 +61,14 @@ class EntrypointArgumentParser:
 
         configuration_filepath = pathlib.Path(configuration_filepath)
         if not configuration_filepath.is_file():
-            raise ValueError("Provided configuration filepath is invalid.")
+            raise ValueError("Provided configuration filepath is invalid")
 
         return Arguments(configuration_filepath, configuration_filetype, args.log_level)
 
 
-def init_logger(level: str):
-    logger.setLevel(level)
+def init_root_logger(level: str):
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
 
     formatter = logging.Formatter('%(levelname)-8s %(pathname)s:%(lineno)d: %(message)s')
 
@@ -75,15 +76,19 @@ def init_logger(level: str):
     ch.setLevel(level)
     ch.setFormatter(formatter)
 
-    logger.addHandler(ch)
+    root_logger.addHandler(ch)
 
 
 def main():
     args = EntrypointArgumentParser().parse_args()
-    init_logger(args.log_level)
-    logger.info(f"Starting using provided {args.configuration_filetype} configuration file: {args.configuration_filepath}")
+    init_root_logger(args.log_level)
+    logger.info(f"Starting using provided {args}")
+
     configuration = cfg.ConfigurationText(args.configuration_filepath.read_text(), args.configuration_filetype).parse().build()
-    logger.debug(f"Parsed configuration: {configuration}")
+    logger.debug(f"Finished parsing {configuration}")
+
+    configuration.board.start()
+
 
 if __name__ == "__main__":
     main()

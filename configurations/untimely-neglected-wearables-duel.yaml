@@ -4,3 +4,9 @@ snakes: [
   {name: "rattley", path: "${{ SNAKES_DIR }}/untimely-neglected-wearable"},
   {name: "anacondie", path: "${{ SNAKES_DIR }}/untimely-neglected-wearable"}
 ]
+
+board: {
+  HOST: "127.0.0.1",
+  PORT: 5000,
+  path: "${{ BOARD_DIR }}"
+}
