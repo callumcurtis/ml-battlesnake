@@ -54,25 +54,88 @@ def main():
     init_root_logger(args.log_level)
     logger.info(f"Starting using provided {args}")
 
-    process = model.Service(
+
+    snake_program = model.Program(
+        name="untimely-neglected-wearable",
+        entrypoint=["python", "server.py"],
+        cwd=paths.SNAKES_DIR/"untimely-neglected-wearable",
+    )
+
+    service0 = model.Service(
         name="untimely-neglected-wearable-0",
-        program=model.Program(
-            name="untimely-neglected-wearable",
-            entrypoint=["python", "server.py"],
-            cwd=paths.SNAKES_DIR/"untimely-neglected-wearable"),
+        program=snake_program,
         env={"PORT": "5274"},
         routes=[
             model.Snake(
-                name="untimely-neglected-wearable",
+                name="rattley",
                 baseroute="http://localhost:5274",
             ),
         ],
     )
 
-    process.start()
+    service1 = model.Service(
+        name="untimely-neglected-wearable-1",
+        program=snake_program,
+        env={"PORT": "6830"},
+        routes=[
+            model.Snake(
+                name="anacondie",
+                baseroute="http://localhost:6830",
+            ),
+        ],
+    )
+
+    board_program = model.Program(
+        name="board",
+        entrypoint=["npm", "start"],
+        cwd=paths.BOARD_DIR,
+    )
+
+    service2 = model.Service(
+        name="board-0",
+        program=board_program,
+        env={"HOST": "127.0.0.1", "PORT": "9000"},
+        routes=[
+            model.Board(
+                name="main-board",
+                baseroute="http://localhost:9000",
+            ),
+        ],
+    )
+
+    engine_program = model.Program(
+        name="engine",
+        entrypoint=["./engine", "play"],
+        cwd=paths.BIN_DIR,
+    )
+
+    snake_args = []
+    for service in [service0, service1]:
+        for route in service.routes:
+            if isinstance(route, model.Snake):
+                snake_args.extend(["--name", route.name, "--url", route.baseroute])
+
+    service3 = model.Service(
+        name="engine-0",
+        program=engine_program,
+        args=["--browser", "--board-url", "http://localhost:9000", *snake_args],
+        routes=[
+            model.Engine(
+                name="engine-0",
+                baseroute="http://localhost:8080",
+            ),
+        ],
+    )
+
     import time
-    time.sleep(15)
-    process.stop()
+    service0.start()
+    service1.start()
+    service2.start()
+
+    time.sleep(5)
+    service3.start()
+
+    time.sleep(100)
 
 
 if __name__ == "__main__":

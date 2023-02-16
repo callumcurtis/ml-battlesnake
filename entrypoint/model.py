@@ -58,6 +58,28 @@ class Board(Route):
         return f"Board(name={self.name}, baseroute={self.baseroute})"
 
 
+class Engine(Route):
+    
+        def __init__(
+            self,
+            name: str,
+            baseroute: str,
+        ) -> None:
+            self._name = name
+            self._baseroute = baseroute
+        
+        @property
+        def name(self):
+            return self._name
+        
+        @property
+        def baseroute(self):
+            return self._baseroute
+    
+        def __str__(self) -> str:
+            return f"Engine(name={self.name}, baseroute={self.baseroute})"
+
+
 class Program:
     
     def __init__(
