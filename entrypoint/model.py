@@ -1,10 +1,9 @@
+import abc
 import os
 import pathlib
 import subprocess
 import logging
 import atexit
-import socket
-import typing
 
 import psutil
 
@@ -12,95 +11,137 @@ import psutil
 logger = logging.getLogger(__name__)
 
 
-class Snake:
+class Route(abc.ABC):
 
-    def __init__(self, name: str, path: pathlib.Path) -> None:
+    @abc.abstractproperty
+    def baseroute(self):
+        pass
+
+
+class Snake(Route):
+
+    def __init__(self, name: str, baseroute: str) -> None:
         self._name = name
-        self._path = path
+        self._baseroute = baseroute
 
     @property
     def name(self):
         return self._name
 
     @property
-    def path(self):
-        return self._path
+    def baseroute(self):
+        return self._baseroute
     
     def __str__(self) -> str:
-        return f"Snake(name={self.name}, path={self.path})"
+        return f"Snake(name={self.name}, baseroute={self.baseroute})"
 
 
-class Board:
+class Board(Route):
 
     def __init__(
         self,
-        host: str,
-        port: int,
-        path: pathlib.Path,
+        name: str,
+        baseroute: str,
     ) -> None:
-        self._host = host
-        self._port = port
-        self._path = path
-        self._server = Server(self, port)
+        self._name = name
+        self._baseroute = baseroute
     
     @property
-    def host(self) -> str:
-        return self._host
+    def name(self):
+        return self._name
     
     @property
-    def port(self) -> int:
-        return self._port
-    
-    @property
-    def path(self) -> pathlib.Path:
-        return self._path
-
-    def start(self):
-        cmd = ["npm", "start"]
-        env = {**os.environ, "HOST": self._host, "PORT": str(self._port)}
-        cwd = self._path.resolve()
-        self._server.start(cmd, cwd=cwd, env=env)
-
-    def stop(self):
-        self._server.stop()
+    def baseroute(self):
+        return self._baseroute
 
     def __str__(self) -> str:
-        return f"Board(host={self.host}, port={self.port}, path={self._path.resolve()})"
+        return f"Board(name={self.name}, baseroute={self.baseroute})"
 
 
-class Server:
+class Program:
+    
+    def __init__(
+        self,
+        name: str,
+        entrypoint: list[str],
+        cwd: pathlib.Path,
+    ) -> None:
+        self._name = name
+        self._entrypoint = entrypoint
+        self._cwd = cwd
 
-    def __init__(self, artifact: typing.Any, port: int) -> None:
-        self._artifact = artifact
-        self._port = port
+    @property
+    def name(self):
+        return self._name
+    
+    @property
+    def entrypoint(self):
+        return self._entrypoint
+    
+    @property
+    def cwd(self):
+        return self._cwd
+    
+    def __str__(self) -> str:
+        return f"Program(name={self.name}, entrypoint={self.entrypoint}, cwd={self.cwd})"
+
+
+class Service:
+    
+    def __init__(
+        self,
+        name: str,
+        program: Program,
+        env: dict[str, str] = None,
+        args: list[str] = None,
+        routes: list[Route] = None,
+    ) -> None:
+        self._name = name
+        self._program = program
+        self._env = env if env is not None else {}
+        self._args = args if args is not None else []
+        self._routes = routes if routes is not None else []
         self._popen = None
-        self._register_cleanup()
 
-    def start(self, cmd: list[str], **kwargs):
+        self._subscribe_to_exit_signal_for_cleanup()
+
+    @property
+    def name(self):
+        return self._name
+    
+    @property
+    def program(self):
+        return self._program
+
+    @property
+    def routes(self):
+        return self._routes
+
+    def start(self) -> None:
         assert self._popen is None
-        if not self._is_port_available():
-            raise ValueError(f"Port {self._port} is not available")
         logger.debug(f"Starting {self}")
-        self._popen = subprocess.Popen(cmd, **kwargs, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-    def _is_port_available(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            return s.connect_ex(('localhost', self._port)) != 0
-
-    def stop(self):
+        self._popen = subprocess.Popen(
+            self.program.entrypoint + self._args,
+            cwd=self.program.cwd,
+            env={**os.environ, **self._env},
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    
+    def stop(self) -> None:
         assert self._popen is not None
         logger.debug(f"Stopping {self}")
-        process = psutil.Process(self._popen.pid)
-        for proc in process.children(recursive=True):
-            proc.kill()
-        process.kill()
+        parent = psutil.Process(self._popen.pid)
+        for child in parent.children(recursive=True):
+            child.kill()
+        parent.kill()
         self._popen = None
-
-    def _register_cleanup(self):
-        def stop_if_running():
+    
+    def _subscribe_to_exit_signal_for_cleanup(self) -> None:
+        def cleanup():
             if self._popen is not None:
                 self.stop()
-        atexit.register(stop_if_running)
+        atexit.register(cleanup)
 
     def __str__(self) -> str:
-        return f"Server({self._artifact})"
+        return f"Service(name={self.name}, program={self.program}, env={self._env}, args={self._args}, routes={self._routes})"
