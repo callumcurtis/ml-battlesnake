@@ -21,11 +21,11 @@ class Arguments:
         return f"Arguments(log_level={self.log_level})"
 
 
-class EntrypointArgumentParser:
+class ArgumentParser:
 
     def __init__(self) -> None:
         parser = argparse.ArgumentParser(
-            prog="RL-Battlesnake Entrypoint",
+            prog="Production RL-Battlesnake",
             description="Runs games of Battlesnake according to the input configuration",
         )
         parser.add_argument("--log-level", metavar="LOG-LEVEL", default="DEBUG")
@@ -50,7 +50,7 @@ def init_root_logger(level: str):
 
 
 def main():
-    args = EntrypointArgumentParser().parse_args()
+    args = ArgumentParser().parse_args()
     init_root_logger(args.log_level)
     logger.info(f"Starting using provided {args}")
 
