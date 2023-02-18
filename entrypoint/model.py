@@ -36,7 +36,7 @@ class Snake(Route):
         return f"Snake(name={self.name}, baseroute={self.baseroute})"
 
 
-class Board(Route):
+class BrowserSpectator(Route):
 
     def __init__(
         self,
@@ -55,7 +55,7 @@ class Board(Route):
         return self._baseroute
 
     def __str__(self) -> str:
-        return f"Board(name={self.name}, baseroute={self.baseroute})"
+        return f"BrowserSpectator(name={self.name}, baseroute={self.baseroute})"
 
 
 class Engine(Route):

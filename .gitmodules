@@ -5,5 +5,5 @@
 	path = snakes/untimely-neglected-wearable
 	url = https://github.com/altersaddle/untimely-neglected-wearable.git
 [submodule "board"]
-	path = board
+	path = browser-spectator
 	url = https://github.com/BattlesnakeOfficial/board.git

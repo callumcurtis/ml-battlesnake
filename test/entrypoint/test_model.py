@@ -31,13 +31,13 @@ def snake_generator():
 
 
 @pytest.fixture
-def board_generator():
+def browser_spectator_generator():
     def generator():
         i = 0
         while i:= i + 1:
-            yield model.Board(
-                name=f"test-board-{i}",
-                baseroute=f"test-board-{i}-baseroute",
+            yield model.BrowserSpectator(
+                name=f"test-browser-spectator-{i}",
+                baseroute=f"test-browser-spectator-{i}-baseroute",
             )
     return generator()
 
@@ -68,12 +68,12 @@ def test_program_str():
     assert str(program) == f"Program(name={name}, entrypoint={entrypoint}, cwd={cwd})"
 
 
-def test_service_properties(program_generator, snake_generator, board_generator):
+def test_service_properties(program_generator, snake_generator, browser_spectator_generator):
     name = "test-service"
     env = {"TEST": "test"}
     args = ["arg-0", "arg-1", "arg-2"]
     program = next(program_generator)
-    routes = [next(snake_generator), next(board_generator), next(snake_generator)]
+    routes = [next(snake_generator), next(browser_spectator_generator), next(snake_generator)]
     service = model.Service(
         name=name,
         program=program,
@@ -86,12 +86,12 @@ def test_service_properties(program_generator, snake_generator, board_generator)
     assert service.routes == routes
 
 
-def test_service_str(program_generator, snake_generator, board_generator):
+def test_service_str(program_generator, snake_generator, browser_spectator_generator):
     name = "test-service"
     program = next(program_generator)
     env = {"TEST": "test"}
     args = ["arg-0", "arg-1", "arg-2"]
-    routes = [next(snake_generator), next(board_generator), next(snake_generator)]
+    routes = [next(snake_generator), next(browser_spectator_generator), next(snake_generator)]
     service = model.Service(
         name=name,
         program=program,
@@ -158,22 +158,22 @@ def test_snake_str():
     assert str(snake) == f"Snake(name={name}, baseroute={baseroute})"
 
 
-def test_board_properties():
-    name = "test-board"
-    baseroute = "test-board-baseroute"
-    board = model.Board(
+def test_browser_spectator_properties():
+    name = "test-browser-spectator"
+    baseroute = "test-browser-spectator-baseroute"
+    browser_spectator = model.BrowserSpectator(
         name=name,
         baseroute=baseroute,
     )
-    assert board.name == name
-    assert board.baseroute == baseroute
+    assert browser_spectator.name == name
+    assert browser_spectator.baseroute == baseroute
 
 
-def test_board_str():
-    name = "test-board"
-    baseroute = "test-board-baseroute"
-    board = model.Board(
+def test_browser_spectator_str():
+    name = "test-browser-spectator"
+    baseroute = "test-browser-spectator-baseroute"
+    browser_spectator = model.BrowserSpectator(
         name=name,
         baseroute=baseroute,
     )
-    assert str(board) == f"Board(name={name}, baseroute={baseroute})"
+    assert str(browser_spectator) == f"BrowserSpectator(name={name}, baseroute={baseroute})"

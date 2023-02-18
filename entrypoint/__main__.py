@@ -85,19 +85,19 @@ def main():
         ],
     )
 
-    board_program = model.Program(
-        name="board",
+    browser_spectator_program = model.Program(
+        name="browser-spectator",
         entrypoint=["npm", "start"],
-        cwd=paths.BOARD_DIR,
+        cwd=paths.BROWSER_SPECTATOR_DIR,
     )
 
     service2 = model.Service(
-        name="board-0",
-        program=board_program,
+        name="browser-spectator-0",
+        program=browser_spectator_program,
         env={"HOST": "127.0.0.1", "PORT": "9000"},
         routes=[
-            model.Board(
-                name="main-board",
+            model.BrowserSpectator(
+                name="main-browser-spectator",
                 baseroute="http://localhost:9000",
             ),
         ],
