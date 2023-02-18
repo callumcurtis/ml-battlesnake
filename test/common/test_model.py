@@ -2,7 +2,7 @@ import pathlib
 
 import pytest
 
-from entrypoints import model
+from common import model
 
 
 @pytest.fixture

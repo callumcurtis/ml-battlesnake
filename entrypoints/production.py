@@ -1,8 +1,8 @@
 import argparse
 import logging
 
-from . import model
-from . import paths
+from common import model
+from common import paths
 
 
 logger = logging.getLogger(__name__)
