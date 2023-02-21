@@ -15,7 +15,7 @@ def env(
 ):
     env = BaseEnv(
         rules,
-        wdith=width,
+        width=width,
         height=height,
         game_map="hz_rivers_bridges",
         game_type="standard",

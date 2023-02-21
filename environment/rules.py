@@ -5,6 +5,8 @@ import pathlib
 
 class Rules:
 
+    _MOVES = ["up", "down", "left", "right"]
+
     def __init__(
         self,
         dll_path: pathlib.Path,
@@ -33,6 +35,9 @@ class Rules:
         self._step = step
         self._done = done
         self._render = render
+    
+    def moves(self) -> list[str]:
+        return self._MOVES
 
     def render(self, color: bool = True) -> None:
         self._render(1 if color else 0)

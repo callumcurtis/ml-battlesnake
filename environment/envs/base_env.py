@@ -6,8 +6,7 @@ from gymnasium import spaces
 
 # Local Imports
 from environment.constants import DEFAULT_COLORS
-from environment.spaces.move import Move
-from environment.types.battlesnake_options import BattlesnakeOptions
+from environment.battlesnake_options import BattlesnakeOptions
 from environment.rules import Rules
 
 
@@ -105,9 +104,9 @@ class BaseEnv(ParallelEnv):
         )
 
         # assert False, "observation_space() is not implemented yet"
-        return Move()
+        return spaces.Discrete(len(self._rules.moves()))
 
-    def render(self, mode="ascii"):
+    def render(self, mode="color"):
         """
         Renders the environment. In human mode, it can print to terminal, open
         up a graphical window, or open up some other display that a human can see and understand.
@@ -120,7 +119,7 @@ class BaseEnv(ParallelEnv):
         else:
             assert False, "Valid render modes are 'ascii' and 'color'"
 
-    def reset(self, seed=None):
+    def reset(self, seed=None, options=None):
         """
         Reset needs to initialize the `agents` attribute and must set up the
         environment so that render(), and step() can be called without issues.
@@ -155,12 +154,13 @@ class BaseEnv(ParallelEnv):
             self.agents = []
             return {}, {}, {}, {}
 
-        agents = self._rules.step(action)
+        agents = self._rules.step({agent: self._rules.moves()[i] for agent, i in action.items()})
 
         observations = {}
         rewards = {}
         dones = {}
         infos = {}
+        truncations = {a: False for a in self.agents}
 
         for agent in agents:
             observations[agent] = agents[agent]["observation"]
@@ -171,4 +171,4 @@ class BaseEnv(ParallelEnv):
         if self._rules.done():
             self.agents = []
 
-        return observations, rewards, dones, infos
+        return observations, rewards, dones, truncations, infos
