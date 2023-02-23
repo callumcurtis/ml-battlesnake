@@ -3,3 +3,4 @@ psutil==5.8.0
 PettingZoo==1.22.3
 matplotlib==3.7.0
 torch==1.13.1
+stable-baselines3==1.7.0
