@@ -7,26 +7,14 @@ import abc
 
 class BattlesnakeEngine(abc.ABC):
 
-    class Moves(enum.Enum):
+    class Movement(enum.IntEnum):
         UP = 0
         DOWN = enum.auto()
         LEFT = enum.auto()
         RIGHT = enum.auto()
 
-        def __str__(self):
+        def __str__(self) -> str:
             return self.name.lower()
-
-    @abc.abstractmethod
-    def reset(self, settings) -> dict:
-        pass
-
-    @abc.abstractmethod
-    def step(self, moves) -> dict:
-        pass
-
-    @abc.abstractmethod
-    def render(self) -> None:
-        pass
 
 
 def _battlesnake_dll_engine():
@@ -35,11 +23,11 @@ def _battlesnake_dll_engine():
 
     def triggers_load(func):
         loaded_attrs.append(func)
-        def wrapper(self, *args, **kwargs):
+        def decorator(self, *args, **kwargs):
             if not self._is_loaded():
                 self._load()
             return func(self, *args, **kwargs)
-        return wrapper
+        return decorator
 
     class BattlesnakeDllEngine(BattlesnakeEngine):
 
@@ -105,7 +93,8 @@ def _battlesnake_dll_engine():
             return json.loads(res.decode("utf-8"))
 
         @triggers_load
-        def step(self, moves) -> dict:
+        def step(self, moves: dict[str, BattlesnakeEngine.Movement]) -> dict:
+            moves = {agent: str(movement) for agent, movement in moves.items()}
             moves = json.dumps(moves).encode("utf-8")
             res = self._step(moves)
             return json.loads(res.decode("utf-8"))

@@ -20,6 +20,9 @@ from environment.rules import Rules
 from common import paths
 
 
+raise NotImplementedError("This file is not yet updated to the new environment")
+
+
 class DQN(nn.Module):
     def __init__(self, n_observations, n_actions, hidden_dim):
         super(DQN, self).__init__()
