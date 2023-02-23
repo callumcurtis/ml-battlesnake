@@ -24,6 +24,10 @@ class BattlesnakeEngine(abc.ABC):
     def step(self, moves) -> dict:
         pass
 
+    @abc.abstractmethod
+    def render(self) -> None:
+        pass
+
 
 def _battlesnake_dll_engine():
 
