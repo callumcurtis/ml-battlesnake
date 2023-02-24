@@ -2,4 +2,4 @@ from .configuration import BattlesnakeEnvironmentConfiguration
 from .adapters import BattlesnakeEngineForParallelEnv, wrap_engine_for_parallel_env
 from .engines import BattlesnakeEngine, BattlesnakeDllEngine
 from .env import make_env, BattlesnakeEnvironment
-from .observation_transformers import ObservationTransformer, ObservationToArray
+from .observation_transformers import ObservationTransformer, ObservationToImage

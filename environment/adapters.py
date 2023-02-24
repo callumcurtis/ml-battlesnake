@@ -111,6 +111,7 @@ class BattlesnakeDllEngineForParallelEnv(BattlesnakeEngineForParallelEnv):
         
         def _step(self, actions) -> tuple[dict, dict, dict, dict]:
             previously_alive_agents = self._engine.active_snakes()
+            actions = {agent: self._engine.Movement(action) for agent, action in actions.items()}
             response = self._engine.step(actions)
             observations = {agent: response[agent]["observation"] for agent in previously_alive_agents}
             rewards = {agent: response[agent]["reward"] for agent in previously_alive_agents}

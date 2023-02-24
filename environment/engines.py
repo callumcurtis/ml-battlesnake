@@ -13,9 +13,6 @@ class BattlesnakeEngine(abc.ABC):
         LEFT = enum.auto()
         RIGHT = enum.auto()
 
-        def __str__(self) -> str:
-            return self.name.lower()
-    
     @abc.abstractmethod
     def active_snakes(self) -> list[str]:
         pass
@@ -114,7 +111,7 @@ def _battlesnake_dll_engine():
 
         @triggers_load
         def step(self, moves: dict[str, BattlesnakeEngine.Movement]) -> dict:
-            moves = {agent: str(movement) for agent, movement in moves.items()}
+            moves = {agent: movement.name.lower() for agent, movement in moves.items()}
             moves = json.dumps(moves).encode("utf-8")
             res = self._step(moves)
             return json.loads(res.decode("utf-8"))
