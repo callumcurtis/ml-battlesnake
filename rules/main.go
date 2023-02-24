@@ -110,6 +110,26 @@ func render(useColor C.int) {
 	state.printMap(state.boardState, useColor == 1)
 }
 
+//export responses
+func responses() *C.char {
+	state := GetState()
+
+	// Construct the step response
+	response := map[string]StepRes{}
+
+	for _, snakeState := range state.snakeStates {
+		response[snakeState.ID] = state.getResponseForSnake(snakeState)
+	}
+
+	responseString, err := json.Marshal(response)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return C.CString(string(responseString))
+}
+
 // empty main
 func main() {}
 

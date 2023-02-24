@@ -15,14 +15,15 @@ class BattlesnakeEngine(abc.ABC):
 
         def __str__(self) -> str:
             return self.name.lower()
+    
+    @abc.abstractmethod
+    def active_snakes(self) -> list[str]:
+        pass
 
 
 def _battlesnake_dll_engine():
 
-    loaded_attrs = []
-
     def triggers_load(func):
-        loaded_attrs.append(func)
         def decorator(self, *args, **kwargs):
             if not self._is_loaded():
                 self._load()
@@ -41,6 +42,15 @@ def _battlesnake_dll_engine():
             self._step = None
             self._done = None
             self._render = None
+            self._responses = None
+            self._loaded_attrs = [
+                self._setup,
+                self._reset,
+                self._step,
+                self._done,
+                self._render,
+                self._responses,
+            ]
         
         def _load(self):
             assert not self._is_loaded(), "the dll is already loaded"
@@ -63,15 +73,25 @@ def _battlesnake_dll_engine():
             render = dll.render
             render.argtypes = [ctypes.c_int]
 
+            responses = dll.responses
+            responses.restype = ctypes.c_char_p
+
             self._setup = setup
             self._reset = reset
             self._step = step
             self._done = done
             self._render = render
+            self._responses = responses
 
         def _is_loaded(self):
-            assert all(x is None for x in loaded_attrs) or all(x is not None for x in loaded_attrs), "the dll is in an inconsistent state"
+            assert (
+                all(x is None for x in self._loaded_attrs)
+                or all(x is not None for x in self._loaded_attrs)
+            ), "the dll is in an inconsistent state"
             return self._setup is not None
+
+        def active_snakes(self) -> list[str]:
+            return list(snake for snake, response in self.responses().items() if not response["done"])
 
         @triggers_load
         def render(self, color: bool = True) -> None:
@@ -97,6 +117,11 @@ def _battlesnake_dll_engine():
             moves = {agent: str(movement) for agent, movement in moves.items()}
             moves = json.dumps(moves).encode("utf-8")
             res = self._step(moves)
+            return json.loads(res.decode("utf-8"))
+
+        @triggers_load
+        def responses(self) -> dict:
+            res = self._responses()
             return json.loads(res.decode("utf-8"))
 
     return BattlesnakeDllEngine

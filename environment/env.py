@@ -2,7 +2,6 @@ import functools
 
 import pettingzoo
 import gymnasium
-from pettingzoo.utils import parallel_to_aec, OrderEnforcingWrapper
 
 from environment.configuration import BattlesnakeEnvironmentConfiguration
 from environment.adapters import BattlesnakeEngineForParallelEnv
@@ -12,9 +11,7 @@ def make_env(
     engine: BattlesnakeEngineForParallelEnv,
     configuration: BattlesnakeEnvironmentConfiguration,
 ):
-    env = BattlesnakeEnvironment(engine,configuration)
-    env = parallel_to_aec(env)
-    env = OrderEnforcingWrapper(env)
+    env = BattlesnakeEnvironment(engine, configuration)
     return env
 
 
@@ -56,14 +53,9 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
         return (observations, infos) if return_info else observations
     
     def step(self, action):
-        if not action:
-            self.agents = []
-            return {}, {}, {}, {}
-        
         observations, rewards, terminations, infos = self.engine.step(action)
         truncations = {agent: False for agent in self.agents}
 
-        if self.engine.is_game_over():
-            self.agents = []
+        self.agents = [agent for agent in self.agents if not terminations[agent] and not truncations[agent]]
 
         return observations, rewards, terminations, truncations, infos

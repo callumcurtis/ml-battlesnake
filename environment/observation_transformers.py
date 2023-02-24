@@ -1,4 +1,5 @@
 import abc
+import functools
 
 import numpy as np
 import gymnasium
@@ -17,6 +18,10 @@ class ObservationTransformer(abc.ABC):
     def space(self):
         pass
 
+    @abc.abstractmethod
+    def empty_observation(self):
+        pass
+
 
 class ObservationToArray(ObservationTransformer):
 
@@ -24,40 +29,45 @@ class ObservationToArray(ObservationTransformer):
         self,
         env_config: BattlesnakeEnvironmentConfiguration
     ):
-        shape = (1, env_config.height, env_config.width)
-        self._space = gymnasium.spaces.Box(low=0, high=1, shape=shape, dtype=np.float16)
+        self._env_config = env_config
 
-    @property
+    @functools.cached_property
     def space(self):
-        return self._space
+        shape = (1, self._env_config.height, self._env_config.width)
+        return gymnasium.spaces.Box(low=0, high=1, shape=shape, dtype=np.float16)
 
     def transform(self, observation):
-        elements = [
+        static_elements = [
             "empty", 
             "food",
-            "your_head",
             "your_body",
+            "your_head",
         ]
         your_id = observation["you"]["id"]
-        enemies = list(filter(lambda s: s["id"] != your_id, observation["board"]["snakes"]))
-        elements.extend(f"enemy_{i}_head" for i in range(len(enemies)))
-        elements.extend(f"enemy_{i}_body" for i in range(len(enemies)))
-
-        encoded_value_spacing = 1 / (len(elements) - 1)
-        encoding_by_element = {element: i * encoded_value_spacing for i, element in enumerate(elements)}
+        all_enemies = list(filter(lambda s: s != your_id, self._env_config.possible_agents))
+        dynamic_elements = [f"enemy_{i}_{part}" for i in range(len(all_enemies)) for part in ["body", "head"]]
+        all_elements = static_elements + dynamic_elements
+        encoded_value_spacing = 1 / (len(all_elements) - 1)
+        encoding_by_element = {element: i * encoded_value_spacing for i, element in enumerate(all_elements)}
 
         element_coords = {
             "food": tuple((food["x"], food["y"]) for food in observation["board"]["food"]),
-            "your_head": ((observation["you"]["head"]["x"], observation["you"]["head"]["y"]),),
             "your_body": tuple((body["x"], body["y"]) for body in observation["you"]["body"]),
+            "your_head": ((observation["you"]["head"]["x"], observation["you"]["head"]["y"]),),
         }
+        enemies = list(filter(lambda s: s["id"] in all_enemies, observation["board"]["snakes"]))
         for i, enemy in enumerate(enemies):
-            element_coords[f"enemy_{i}_head"] = ((enemy["head"]["x"], enemy["head"]["y"]),)
             element_coords[f"enemy_{i}_body"] = tuple((body["x"], body["y"]) for body in enemy["body"])
+            element_coords[f"enemy_{i}_head"] = ((enemy["head"]["x"], enemy["head"]["y"]),)
 
-        array = np.zeros(self._space.shape, dtype=np.float16)
+        array = np.zeros(self.space.shape, dtype=np.float16)
         assert array.shape[0] == 1, "Only one channel is supported"
         for element, coords in element_coords.items():
-            array[0][list(zip(*coords))] = encoding_by_element[element]
+            array[0][tuple(zip(*coords))] = encoding_by_element[element]
+        # match the orientation of the game board by moving origin to bottom left
+        array[0] = np.rot90(array[0])
 
         return array
+
+    def empty_observation(self):
+        return np.zeros(self.space.shape, dtype=np.float16)

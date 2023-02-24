@@ -42,7 +42,15 @@ class BattlesnakeEngineForParallelEnv(abc.ABC):
     
     def step(self, actions) -> tuple[dict, dict, dict, dict]:
         observations, rewards, terminations, infos = self._step(actions)
-        observations = {agent: self.observation_transformer.transform(obs) for agent, obs in observations.items()}
+        if len(self.engine.active_snakes()) == 1:
+            terminations = {agent: True for agent in terminations.keys()}
+        alive_agents = {agent for agent, termination in terminations.items() if not termination}
+        observations = {
+            agent: self.observation_transformer.transform(obs)
+                if agent in alive_agents
+                else self.observation_transformer.empty_observation()
+            for agent, obs in observations.items()
+        }
         return observations, rewards, terminations, infos
 
     @property
@@ -102,14 +110,14 @@ class BattlesnakeDllEngineForParallelEnv(BattlesnakeEngineForParallelEnv):
             return observations, infos
         
         def _step(self, actions) -> tuple[dict, dict, dict, dict]:
-            agents = list(actions.keys())
+            previously_alive_agents = self._engine.active_snakes()
             response = self._engine.step(actions)
-            observations = {agent: response[agent]["observation"] for agent in agents}
-            rewards = {agent: response[agent]["reward"] for agent in agents}
-            terminations = {agent: response[agent]["done"] for agent in agents}
-            infos = {agent: info if (info := response[agent]["info"]) else {} for agent in agents}
+            observations = {agent: response[agent]["observation"] for agent in previously_alive_agents}
+            rewards = {agent: response[agent]["reward"] for agent in previously_alive_agents}
+            terminations = {agent: response[agent]["done"] for agent in previously_alive_agents}
+            infos = {agent: info if (info := response[agent]["info"]) else {} for agent in previously_alive_agents}
             return observations, rewards, terminations, infos
-        
+
         def is_game_over(self) -> bool:
             return self._engine.done()
 
