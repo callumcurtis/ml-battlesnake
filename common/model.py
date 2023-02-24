@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 class Route(abc.ABC):
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def baseroute(self):
         pass
 
