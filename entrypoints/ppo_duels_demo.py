@@ -1,17 +1,74 @@
+import pathlib
+
+import gymnasium
+import sys
+sys.path.append("")
+sys.modules["gym"] = gymnasium
+
 from stable_baselines3 import PPO
-from pettingzoo.test import api_test
+from stable_baselines3.common.vec_env import VecMonitor
+import supersuit
+from supersuit.vector import ConcatVecEnv
+import numpy as np
 
 from common import paths
-from environment.rules import Rules
-from environment.envs import duels_v0
+from environment import make_env, BattlesnakeDllEngine, adapt_engine_for_parallel_env, BattlesnakeEnvironmentConfiguration
+from environment import ObservationToImage
 
 
-raise NotImplementedError("This file is not yet updated to the new environment")
+def add_default_mode_to_render_args(env):
+    wrapped = env.render
+    def wrapper(self, mode='human'):
+        return wrapped(self)
+    env.render = wrapper
+    return env
+
+add_default_mode_to_render_args(ConcatVecEnv)
+
+engine = BattlesnakeDllEngine(paths.BIN_DIR / "rules.dll")
+configuration = BattlesnakeEnvironmentConfiguration(possible_agents=["agent_0", "agent_1"])
+observation_transformer = ObservationToImage(configuration)
+engine_adapter = adapt_engine_for_parallel_env(engine, observation_transformer)
+env = make_env(engine_adapter, configuration)
+
+env = supersuit.flatten_v0(env)
+env = supersuit.pettingzoo_env_to_vec_env_v1(env)
+env = supersuit.concat_vec_envs_v1(env, 1, num_cpus=1, base_class="stable_baselines3")
+
+def combine_truncation_and_termination_into_done_in_steps(env):
+    def make_wrapper(wrapped):
+        def wrapper(*args, **kwargs):
+            observations, rewards, terminations, truncations, infos = wrapped(*args, **kwargs)
+            dones = np.maximum(terminations, truncations)
+            return observations, rewards, dones, infos
+        return wrapper
+    env.step = make_wrapper(env.step)
+    env.step_wait = make_wrapper(env.step_wait)
+    return env
+
+env = combine_truncation_and_termination_into_done_in_steps(env)
+env = VecMonitor(env)
 
 
-rules = Rules(paths.BIN_DIR/"rules.dll")
-env = duels_v0.env(rules)  # Create a default duels environment
-api_test(env)
+model_file = "ppo_duels_demo_v0.zip"
+train = False
 
-model = PPO('MlpPolicy', env, verbose=1)
-model.learn(total_timesteps=10000)
+if train:
+    if pathlib.Path(model_file).exists():
+        model = PPO.load(model_file)
+    else:
+        model = PPO('MlpPolicy', env, verbose=1, tensorboard_log="ppo_duels_demo_v0_tensorboard")
+    model.learn(total_timesteps=1000000)  # Try: 1000000 * 32
+    model.save(model_file)
+
+model = PPO.load(model_file)
+
+
+obs = env.reset()
+dones = [False, False]
+while not all(dones):
+    env.render()
+    actions, _ = model.predict(obs)
+    obs, rewards, dones, info = env.step(actions)
+    if all(dones):
+        print(f"Episode finished after actions({list(engine.Movement(action) for action in actions)}), and reward({rewards})")
