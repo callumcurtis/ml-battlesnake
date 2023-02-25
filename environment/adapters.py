@@ -123,7 +123,7 @@ class BattlesnakeDllEngineForParallelEnv(BattlesnakeEngineForParallelEnv):
             return self._engine.done()
 
 
-def wrap_engine_for_parallel_env(
+def adapt_engine_for_parallel_env(
     engine: BattlesnakeEngine,
     observation_transformer: ObservationTransformer,
 ) -> BattlesnakeEngineForParallelEnv:
