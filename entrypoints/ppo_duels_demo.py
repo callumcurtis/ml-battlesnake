@@ -61,7 +61,7 @@ train = True
 
 if train:
     if pathlib.Path(model_file).exists():
-        model = PPO.load(model_file)
+        model = PPO.load(model_file, env, verbose=1, tensorboard_log=tensorboard_log_dir)
     else:
         model = PPO('MlpPolicy', env, verbose=1, tensorboard_log=tensorboard_log_dir)
     model.learn(total_timesteps=total_timesteps)
