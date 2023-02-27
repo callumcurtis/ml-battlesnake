@@ -12,7 +12,7 @@ from supersuit.vector import ConcatVecEnv
 import numpy as np
 
 from common import paths
-from environment import make_env, BattlesnakeDllEngine, adapt_engine_for_parallel_env, BattlesnakeEnvironmentConfiguration
+from environment import make_env, BattlesnakeDllEngine, adapt_engine_for_parallel_env, BattlesnakeEnvironmentConfiguration, Movement
 from environment import ObservationToImage
 
 
@@ -28,8 +28,8 @@ add_default_mode_to_render_args(ConcatVecEnv)
 engine = BattlesnakeDllEngine(paths.BIN_DIR / "rules.dll")
 configuration = BattlesnakeEnvironmentConfiguration(possible_agents=["agent_0", "agent_1"])
 observation_transformer = ObservationToImage(configuration)
-engine_adapter = adapt_engine_for_parallel_env(engine, observation_transformer)
-env = make_env(engine_adapter, configuration)
+engine_adapter = adapt_engine_for_parallel_env(engine)
+env = make_env(engine_adapter, observation_transformer, configuration)
 
 env = supersuit.flatten_v0(env)
 env = supersuit.pettingzoo_env_to_vec_env_v1(env)
@@ -56,7 +56,7 @@ model_name = f"model"  # TODO: Use better naming scheme
 
 model_file = paths.RESULTS_DIR / experiment_name / (model_name + ".zip")
 tensorboard_log_dir = paths.RESULTS_DIR / experiment_name / "tensorboard"
-train = False
+train = True
 
 if train:
     if pathlib.Path(model_file).exists():
@@ -76,4 +76,4 @@ while not all(dones):
     actions, _ = model.predict(obs)
     obs, rewards, dones, info = env.step(actions)
     if all(dones):
-        print(f"Episode finished after actions({list(engine.Movement(action) for action in actions)}), and reward({rewards})")
+        print(f"Episode finished after actions({list(Movement(action) for action in actions)}), and reward({rewards})")

@@ -5,17 +5,15 @@ import enum
 import abc
 
 
+class Movement(enum.IntEnum):
+    UP = 0
+    DOWN = enum.auto()
+    LEFT = enum.auto()
+    RIGHT = enum.auto()
+
+
 class BattlesnakeEngine(abc.ABC):
-
-    class Movement(enum.IntEnum):
-        UP = 0
-        DOWN = enum.auto()
-        LEFT = enum.auto()
-        RIGHT = enum.auto()
-
-    @abc.abstractmethod
-    def active_snakes(self) -> list[str]:
-        pass
+    pass
 
 
 def _battlesnake_dll_engine():
@@ -110,7 +108,7 @@ def _battlesnake_dll_engine():
             return json.loads(res.decode("utf-8"))
 
         @triggers_load
-        def step(self, moves: dict[str, BattlesnakeEngine.Movement]) -> dict:
+        def step(self, moves: dict[str, Movement]) -> dict:
             moves = {agent: movement.name.lower() for agent, movement in moves.items()}
             moves = json.dumps(moves).encode("utf-8")
             res = self._step(moves)
