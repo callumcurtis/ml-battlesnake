@@ -31,6 +31,7 @@ observation_transformer = ObservationToImage(configuration)
 engine_adapter = adapt_engine_for_parallel_env(engine)
 env = make_env(engine_adapter, observation_transformer, configuration)
 
+env = supersuit.black_death_v3(env)
 env = supersuit.flatten_v0(env)
 env = supersuit.pettingzoo_env_to_vec_env_v1(env)
 env = supersuit.concat_vec_envs_v1(env, 1, num_cpus=1, base_class="stable_baselines3")

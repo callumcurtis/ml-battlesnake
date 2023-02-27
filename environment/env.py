@@ -70,7 +70,7 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
         if self.engine_adapter.is_game_over():
             terminations = dict.fromkeys(terminations, True)
 
-        truncations = {agent: False for agent in self.agents}
+        truncations = terminations
 
         self.agents = [agent for agent in self.agents if not terminations[agent] and not truncations[agent]]
 
