@@ -50,15 +50,20 @@ env = combine_truncation_and_termination_into_done_in_steps(env)
 env = VecMonitor(env)
 
 
-model_file = "ppo_duels_demo_v0.zip"
+experiment_name = "ppo_duels_demo_v0"
+total_timesteps = 1000000  # Try: 1000000 * 32
+model_name = f"model"  # TODO: Use better naming scheme
+
+model_file = paths.RESULTS_DIR / experiment_name / (model_name + ".zip")
+tensorboard_log_dir = paths.RESULTS_DIR / experiment_name / "tensorboard"
 train = False
 
 if train:
     if pathlib.Path(model_file).exists():
         model = PPO.load(model_file)
     else:
-        model = PPO('MlpPolicy', env, verbose=1, tensorboard_log="ppo_duels_demo_v0_tensorboard")
-    model.learn(total_timesteps=1000000)  # Try: 1000000 * 32
+        model = PPO('MlpPolicy', env, verbose=1, tensorboard_log=tensorboard_log_dir)
+    model.learn(total_timesteps=total_timesteps)
     model.save(model_file)
 
 model = PPO.load(model_file)
