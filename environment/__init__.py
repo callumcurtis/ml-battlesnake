@@ -3,5 +3,5 @@ from .adapters import BattlesnakeEngineForParallelEnv, adapt_engine_for_parallel
 from .engines import BattlesnakeEngine, BattlesnakeDllEngine, Movement
 from .env import make_env, BattlesnakeEnvironment
 from .observation_transformers import ObservationTransformer, ObservationToImage
-from .reward_functions import RewardFunction, RewardWinLoseDraw
+from .reward_functions import RewardFunction, RewardWinLoseDrawSurvival
 from .memory import MemoryBuffer

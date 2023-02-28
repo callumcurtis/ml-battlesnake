@@ -16,19 +16,19 @@ class RewardFunction(abc.ABC):
         pass
 
 
-class RewardWinLoseDraw(RewardFunction):
-
-    NO_REWARD = 0.0
+class RewardWinLoseDrawSurvival(RewardFunction):
 
     def __init__(
         self,
-        win_reward: float,
-        lose_reward: float,
-        draw_reward: float,
+        win_reward: float = 1.0,
+        lose_reward: float = -1.0,
+        draw_reward: float = -1.0,
+        survival_reward: float = 0.001,
     ):
         self.win_reward = win_reward
         self.lose_reward = lose_reward
         self.draw_reward = draw_reward
+        self.survival_reward = survival_reward
     
     def calculate(
         self,
@@ -45,11 +45,11 @@ class RewardWinLoseDraw(RewardFunction):
         n_alive_snakes = n_snakes - n_dead_snakes
         if n_snakes > 1:
             death_reward = self.lose_reward if n_alive_snakes > 0 else self.draw_reward
-            survival_reward = self.win_reward if n_alive_snakes == 1 else self.NO_REWARD
+            survival_reward = self.win_reward if n_alive_snakes == 1 else self.survival_reward
         else:
             # If there is only one snake (solo mode), then the snake can only eventually lose
             death_reward = self.lose_reward
-            survival_reward = self.NO_REWARD
+            survival_reward = self.survival_reward
         rewards = {
             snake: death_reward if is_terminated else survival_reward
             for snake, is_terminated in this_timestep_builder.terminations.items()

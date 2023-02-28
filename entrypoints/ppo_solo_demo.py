@@ -20,7 +20,7 @@ from environment import (
     Movement,
     ObservationToImage,
     MemoryBuffer,
-    RewardWinLoseDraw
+    RewardWinLoseDrawSurvival
 )
 
 
@@ -37,7 +37,7 @@ engine = BattlesnakeDllEngine(paths.BIN_DIR / "rules.dll")
 configuration = BattlesnakeEnvironmentConfiguration(possible_agents=["agent_0"], game_type="solo")
 observation_transformer = ObservationToImage(configuration)
 engine_adapter = adapt_engine_for_parallel_env(engine)
-reward_function = RewardWinLoseDraw(win_reward=1.0, lose_reward=-1.0, draw_reward=-1.0)
+reward_function = RewardWinLoseDrawSurvival()
 memory_buffer = MemoryBuffer(0)
 env = make_env(
     engine_adapter,
