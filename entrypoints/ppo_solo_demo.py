@@ -12,8 +12,16 @@ from supersuit.vector import ConcatVecEnv
 import numpy as np
 
 from common import paths
-from environment import make_env, BattlesnakeDllEngine, adapt_engine_for_parallel_env, BattlesnakeEnvironmentConfiguration, Movement
-from environment import ObservationToImage
+from environment import (
+    make_env,
+    BattlesnakeDllEngine,
+    adapt_engine_for_parallel_env,
+    BattlesnakeEnvironmentConfiguration,
+    Movement,
+    ObservationToImage,
+    MemoryBuffer,
+    RewardWinLoseDraw
+)
 
 
 def add_default_mode_to_render_args(env):
@@ -26,10 +34,18 @@ def add_default_mode_to_render_args(env):
 add_default_mode_to_render_args(ConcatVecEnv)
 
 engine = BattlesnakeDllEngine(paths.BIN_DIR / "rules.dll")
-configuration = BattlesnakeEnvironmentConfiguration(possible_agents=["agent_0", "agent_1"])
+configuration = BattlesnakeEnvironmentConfiguration(possible_agents=["agent_0"], game_type="solo")
 observation_transformer = ObservationToImage(configuration)
 engine_adapter = adapt_engine_for_parallel_env(engine)
-env = make_env(engine_adapter, observation_transformer, configuration)
+reward_function = RewardWinLoseDraw(win_reward=1.0, lose_reward=-1.0, draw_reward=-1.0)
+memory_buffer = MemoryBuffer(0)
+env = make_env(
+    engine_adapter,
+    observation_transformer,
+    reward_function,
+    memory_buffer,
+    configuration,
+)
 
 env = supersuit.black_death_v3(env)
 env = supersuit.flatten_v0(env)
@@ -51,7 +67,7 @@ env = combine_truncation_and_termination_into_done_in_steps(env)
 env = VecMonitor(env)
 
 
-experiment_name = "ppo_duels_demo_v0"
+experiment_name = "ppo_solo_demo_v0"
 total_timesteps = 1000000  # Try: 1000000 * 32
 model_name = f"model"  # TODO: Use better naming scheme
 
