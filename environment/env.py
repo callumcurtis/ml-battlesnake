@@ -3,19 +3,25 @@ import functools
 import pettingzoo
 import gymnasium
 
-from environment.configuration import BattlesnakeEnvironmentConfiguration
+from environment.types import BattlesnakeEnvironmentConfiguration, InitialStateBuilder, TimestepBuilder
 from environment.adapters import BattlesnakeEngineForParallelEnv, Movement
 from environment.observation_transformers import ObservationTransformer
+from environment.reward_functions import RewardFunction
+from environment.memory import MemoryBuffer
 
 
 def make_env(
     engine_adapter: BattlesnakeEngineForParallelEnv,
     observation_transformer: ObservationTransformer,
+    reward_function: RewardFunction,
+    memory_buffer: MemoryBuffer,
     configuration: BattlesnakeEnvironmentConfiguration,
 ):
     env = BattlesnakeEnvironment(
         engine_adapter=engine_adapter,
         observation_transformer=observation_transformer,
+        reward_function=reward_function,
+        memory_buffer=memory_buffer,
         configuration=configuration,
     )
     return env
@@ -29,10 +35,14 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
         self,
         engine_adapter: BattlesnakeEngineForParallelEnv,
         observation_transformer: ObservationTransformer,
+        reward_function: RewardFunction,
+        memory_buffer: MemoryBuffer,
         configuration: BattlesnakeEnvironmentConfiguration,
     ):
         self.engine_adapter = engine_adapter
         self.observation_transformer = observation_transformer
+        self.reward_function = reward_function
+        self.memory_buffer = memory_buffer
         self.configuration = configuration
 
     @property
@@ -57,28 +67,56 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
         if seed:
             self.configuration.seed = seed
 
-        observations, infos = self.engine_adapter.reset(self.configuration)
-        observations = {
+        initial_state_builder = InitialStateBuilder().with_configuration(self.configuration)
+
+        initial_state_builder = self.engine_adapter.reset(initial_state_builder)
+
+        initial_state_builder.with_observations({
             agent: self.observation_transformer.transform(obs)
-            for agent, obs in observations.items()
-        }
-        return (observations, infos) if return_info else observations
+            for agent, obs in initial_state_builder.observations.items()
+        })
+        
+        initial_state = initial_state_builder.build()
+
+        self.memory_buffer.reset(initial_state)
+
+        return (
+            (initial_state.observations, initial_state.infos)
+            if return_info
+            else initial_state.observations
+        )
     
-    def step(self, action):
-        observations, rewards, terminations, infos = self.engine_adapter.step(action)
+    def step(self, actions):
+        timestep_builder = TimestepBuilder().with_actions(actions)
+        timestep_builder = self.engine_adapter.step(timestep_builder)
+        timestep_builder = self.reward_function.calculate(self.memory_buffer, timestep_builder)
 
         if self.engine_adapter.is_game_over():
-            terminations = dict.fromkeys(terminations, True)
+            timestep_builder.with_terminations(dict.fromkeys(timestep_builder.terminations, True))
 
-        truncations = terminations
+        timestep_builder.with_truncations(timestep_builder.terminations.copy())
 
-        self.agents = [agent for agent in self.agents if not terminations[agent] and not truncations[agent]]
+        self.agents = [
+            agent for agent in self.agents
+            if not timestep_builder.terminations[agent]
+            and not timestep_builder.truncations[agent]
+        ]
 
-        observations = {
+        timestep_builder.with_observations({
             agent: self.observation_transformer.transform(obs)
             if agent in self.agents
             else self.observation_transformer.empty_observation()
-            for agent, obs in observations.items()
-        }
+            for agent, obs in timestep_builder.observations.items()
+        })
 
-        return observations, rewards, terminations, truncations, infos
+        timestep = timestep_builder.build()
+
+        self.memory_buffer.add(timestep)
+
+        return (
+            timestep.observations,
+            timestep.rewards,
+            timestep.terminations,
+            timestep.truncations,
+            timestep.infos,
+        )
