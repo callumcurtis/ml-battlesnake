@@ -36,13 +36,17 @@ class ObservationToImage(ObservationTransformer):
         self._env_config = env_config
         self._egocentric = egocentric
 
+        board_shape = (self.NUM_CHANNELS, self._env_config.height, self._env_config.width)
+        view_shape = (self.NUM_CHANNELS, board_shape[1] * 2 - 1, board_shape[2] * 2 - 1) if egocentric else board_shape
+        self._board_shape = board_shape
+        self._view_shape = view_shape
+
     @functools.cached_property
     def space(self):
-        shape = (self.NUM_CHANNELS, self._env_config.height, self._env_config.width)
         return gymnasium.spaces.Box(
             low=np.iinfo(self.DTYPE).min,
             high=np.iinfo(self.DTYPE).max,
-            shape=shape,
+            shape=self._view_shape,
             dtype=self.DTYPE,
         )
 
@@ -72,6 +76,7 @@ class ObservationToImage(ObservationTransformer):
             *possible_directions_to_next_snake_part,
             "enemy_head",
             "your_head",
+            "wall",
         ]
         encoded_value_spacing = self.space.high.item(0) // (len(elements) - 1)
         assert encoded_value_spacing > 0, "Not enough space to encode all elements"
@@ -114,26 +119,27 @@ class ObservationToImage(ObservationTransformer):
             snake_pronoun = "your" if snake_dict["id"] == your_id else "enemy"
             coords_by_element[f"{snake_pronoun}_head"] = ((snake_dict["head"]["x"], snake_dict["head"]["y"]),)
 
-        array = np.zeros(self.space.shape, dtype=self.DTYPE)
-        assert array.shape[0] == 1, "Only one channel is currently supported"
+        board_array = np.zeros(self._board_shape, dtype=self.DTYPE)
+        assert board_array.shape[0] == 1, "Only one channel is currently supported"
         for element, coords in coords_by_element.items():
             if coords:
-                array[0][tuple(zip(*coords))] = encoding_by_element[element]
+                board_array[0][tuple(zip(*coords))] = encoding_by_element[element]
 
         if self._egocentric:
-            # move your head to numpy origin (top left)
-            your_head_coord = (observation["you"]["head"]["x"], observation["you"]["head"]["y"])
-            shift = (-your_head_coord[0], -your_head_coord[1])
-            array = np.roll(array, shift, axis=(1, 2))
-            shift_scalar = -((shift[0] * self._env_config.width) + shift[1])
-            # encode the shift in the head position as the head no longer needs an integer encoding
-            # as it is fixed to the origin
-            array.put(0, shift_scalar)
+            # place the board array within a larger array representing the egocentric view
+            view_array = np.full(self._view_shape, encoding_by_element["wall"], dtype=self.DTYPE)
+            x0 = self._view_shape[1] - self._board_shape[1] - observation["you"]["head"]["x"]
+            x1 = x0 + self._board_shape[1]
+            y0 = self._view_shape[2] - self._board_shape[2] - observation["you"]["head"]["y"]
+            y1 = y0 + self._board_shape[2]
+            view_array[0][x0:x1, y0:y1] = board_array[0]
         else:
-            # match the battlesnake api orientation by moving origin to bottom left
-            array[0] = np.rot90(array[0])
+            view_array = board_array
 
-        return array
+        # match the battlesnake api orientation by moving origin to bottom left
+        view_array[0] = np.rot90(view_array[0])
+
+        return view_array
 
     def empty_observation(self):
         return np.zeros(self.space.shape, dtype=self.DTYPE)
