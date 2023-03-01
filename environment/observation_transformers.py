@@ -30,9 +30,11 @@ class ObservationToImage(ObservationTransformer):
 
     def __init__(
         self,
-        env_config: BattlesnakeEnvironmentConfiguration
+        env_config: BattlesnakeEnvironmentConfiguration,
+        egocentric: bool = False,
     ):
         self._env_config = env_config
+        self._egocentric = egocentric
 
     @functools.cached_property
     def space(self):
@@ -124,8 +126,19 @@ class ObservationToImage(ObservationTransformer):
         for element, coords in coords_by_element.items():
             if coords:
                 array[0][tuple(zip(*coords))] = encoding_by_element[element]
-        # match the orientation of the game board by moving origin to bottom left
-        array[0] = np.rot90(array[0])
+
+        if self._egocentric:
+            # move your head to numpy origin (top left)
+            your_head_coord = (observation["you"]["head"]["x"], observation["you"]["head"]["y"])
+            shift = (-your_head_coord[0], -your_head_coord[1])
+            array = np.roll(array, shift, axis=(1, 2))
+            shift_scalar = -((shift[0] * self._env_config.width) + shift[1])
+            # encode the shift in the head position as the head no longer needs an integer encoding
+            # as it is fixed to the origin
+            array.put(0, shift_scalar)
+        else:
+            # match the battlesnake api orientation by moving origin to bottom left
+            array[0] = np.rot90(array[0])
 
         return array
 
