@@ -45,34 +45,85 @@ class ObservationToImage(ObservationTransformer):
         )
 
     def transform(self, observation):
-        static_elements = [
-            "empty", 
-            "food",
-            "your_body",
-            "your_head",
-        ]
-        your_id = observation["you"]["id"]
-        all_enemies = list(filter(lambda s: s != your_id, self._env_config.possible_agents))
-        dynamic_elements = [f"enemy_{i}_{part}" for i in range(len(all_enemies)) for part in ["body", "head"]]
-        all_elements = static_elements + dynamic_elements
-        encoded_value_spacing = self.space.high.item(0) // (len(all_elements) - 1)
-        assert encoded_value_spacing > 0, "Not enough space to encode all elements"
-        encoding_by_element = {element: self.space.low.item(0) + (i * encoded_value_spacing) for i, element in enumerate(all_elements)}
+        """
+        Transforms the observation into an image.
 
-        element_coords = {
+        The image is a 2D array of integers, where each integer
+        represents a different element on the board. The integers
+        representing elements are spread evenly across the range
+        of the dtype. The number of elements, and thus the spacing
+        between integers, depends on the number of snakes.
+
+        Snakes are encoded using a linked-list representation where
+        the integer value of a snake part encodes the direction to
+        the next snake part (ordered from tail to head).
+        """
+        your_id = observation["you"]["id"]
+        all_enemy_ids = list(filter(lambda s: s != your_id, self._env_config.possible_agents))
+        possible_directions_to_next_snake_part = [
+            "next_is_on_top",
+            "next_is_up",
+            "next_is_down",
+            "next_is_left",
+            "next_is_right",
+            "head",
+        ]
+        elements = [
+            "empty",  # always 0
+            "food",
+            *[
+                f"you_{direction_to_next_snake_part}"
+                for direction_to_next_snake_part in possible_directions_to_next_snake_part
+            ],
+            *[
+                f"{enemy_id}_{direction_to_next_snake_part}"
+                for enemy_id in all_enemy_ids
+                for direction_to_next_snake_part in possible_directions_to_next_snake_part
+            ],
+        ]
+        encoded_value_spacing = self.space.high.item(0) // (len(elements) - 1)
+        assert encoded_value_spacing > 0, "Not enough space to encode all elements"
+        encoding_by_element = {element: self.space.low.item(0) + (i * encoded_value_spacing) for i, element in enumerate(elements)}
+
+        coords_by_element = {
             "food": tuple((food["x"], food["y"]) for food in observation["board"]["food"]),
-            "your_body": tuple((body["x"], body["y"]) for body in observation["you"]["body"]),
-            "your_head": ((observation["you"]["head"]["x"], observation["you"]["head"]["y"]),),
         }
-        enemies = list(filter(lambda s: s["id"] in all_enemies, observation["board"]["snakes"]))
-        for i, enemy in enumerate(enemies):
-            element_coords[f"enemy_{i}_body"] = tuple((body["x"], body["y"]) for body in enemy["body"])
-            element_coords[f"enemy_{i}_head"] = ((enemy["head"]["x"], enemy["head"]["y"]),)
+
+        def get_coords_by_direction_to_next_snake_part(snake_dict):
+            coords_by_direction_to_next_snake_part = {d: [] for d in possible_directions_to_next_snake_part}
+            coords_by_direction_to_next_snake_part["head"] = [(snake_dict["head"]["x"], snake_dict["head"]["y"])]
+            for snake_part_coord, next_snake_part_coord in zip(snake_dict["body"][1:], snake_dict["body"]):
+                snake_part_coord = (snake_part_coord["x"], snake_part_coord["y"])
+                next_snake_part_coord = (next_snake_part_coord["x"], next_snake_part_coord["y"])
+                coord_delta = (
+                    next_snake_part_coord[0] - snake_part_coord[0],
+                    next_snake_part_coord[1] - snake_part_coord[1],
+                )
+                if coord_delta == (0, 1):
+                    direction_to_next_snake_part = "next_is_up"
+                elif coord_delta == (0, -1):
+                    direction_to_next_snake_part = "next_is_down"
+                elif coord_delta == (1, 0):
+                    direction_to_next_snake_part = "next_is_right"
+                elif coord_delta == (-1, 0):
+                    direction_to_next_snake_part = "next_is_left"
+                elif coord_delta == (0, 0):
+                    direction_to_next_snake_part = "next_is_on_top"
+                else:
+                    raise ValueError(f"Unexpected coord delta: {coord_delta}")
+                coords_by_direction_to_next_snake_part[direction_to_next_snake_part].append(snake_part_coord)
+            return coords_by_direction_to_next_snake_part
+        
+        for snake_dict in observation["board"]["snakes"]:
+            snake_id = "you" if snake_dict["id"] == your_id else snake_dict["id"]
+            for direction_to_next_snake_part, coords in get_coords_by_direction_to_next_snake_part(snake_dict).items():
+                coords_by_element[f"{snake_id}_{direction_to_next_snake_part}"] = tuple(coords)
 
         array = np.zeros(self.space.shape, dtype=self.DTYPE)
         assert array.shape[0] == 1, "Only one channel is currently supported"
-        for element, coords in element_coords.items():
-            array[0][tuple(zip(*coords))] = encoding_by_element[element]
+        for element, coords in coords_by_element.items():
+            if coords:
+                array[0][tuple(zip(*coords))] = encoding_by_element[element]
         # match the orientation of the game board by moving origin to bottom left
         array[0] = np.rot90(array[0])
 
