@@ -143,3 +143,42 @@ class ObservationToImage(ObservationTransformer):
 
     def empty_observation(self):
         return np.zeros(self.space.shape, dtype=self.DTYPE)
+
+
+class ObservationToFlattenedArray(ObservationTransformer):
+
+    DTYPE = np.uint8
+
+    def __init__(
+        self,
+        env_config: BattlesnakeEnvironmentConfiguration,
+        egocentric: bool = True,
+    ):
+        self._env_config = env_config
+        self._egocentric = egocentric
+        self._shape = (self._env_config.width * self._env_config.height,)
+        self._to_image = ObservationToImage(env_config, egocentric=False)
+    
+    @functools.cached_property
+    def space(self):
+        return gymnasium.spaces.Box(
+            low=np.iinfo(self.DTYPE).min,
+            high=np.iinfo(self.DTYPE).max,
+            shape=self._shape,
+            dtype=self.DTYPE,
+        )
+    
+    def transform(self, observation):
+        image = self._to_image.transform(observation)
+        board = image.reshape(self._env_config.height, self._env_config.width)
+        if self._egocentric:
+            # shift the board so that your head is at the battlesnake api origin
+            shift = (observation["you"]["head"]["y"], -observation["you"]["head"]["x"])
+            shift_scalar = (abs(shift[0]) * self._env_config.width) + abs(shift[1])
+            board = np.roll(board, shift, axis=(0, 1))
+            # encode the shift in your head position as it is fixed for each observation
+            board[-1, 0] = shift_scalar
+        return board.flatten()
+
+    def empty_observation(self):
+        return np.zeros(self.space.shape, dtype=self.DTYPE)
