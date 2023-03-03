@@ -68,18 +68,23 @@ env = VecMonitor(env)
 
 
 experiment_name = "ppo_solo_demo_v0"
-total_timesteps = 1000000  # Try: 1000000 * 32
+total_timesteps = 3000000  # Try: 1000000 * 32
 model_name = f"model"  # TODO: Use better naming scheme
 
 model_file = paths.RESULTS_DIR / experiment_name / (model_name + ".zip")
 tensorboard_log_dir = paths.RESULTS_DIR / experiment_name / "tensorboard"
 train = True
 
+def make_logarithmic_learning_rate_schedule(initial: float):
+    def schedule(progress_remaining: float) -> float:
+        return initial * 0.1 / (1.1 - progress_remaining)
+    return schedule
+
 if train:
     if pathlib.Path(model_file).exists():
         model = PPO.load(model_file, env, verbose=1, tensorboard_log=tensorboard_log_dir)
     else:
-        model = PPO('MlpPolicy', env, verbose=1, tensorboard_log=tensorboard_log_dir)
+        model = PPO('MlpPolicy', env, verbose=1, tensorboard_log=tensorboard_log_dir, learning_rate=make_logarithmic_learning_rate_schedule(0.0003))
     model.learn(total_timesteps=total_timesteps)
     model.save(model_file)
 
