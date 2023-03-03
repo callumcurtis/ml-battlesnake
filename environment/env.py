@@ -2,6 +2,7 @@ import functools
 
 import pettingzoo
 import gymnasium
+import supersuit
 
 from environment.types import BattlesnakeEnvironmentConfiguration, InitialStateBuilder, TimestepBuilder
 from environment.adapters import BattlesnakeEngineForParallelEnv, Movement
@@ -10,7 +11,7 @@ from environment.reward_functions import RewardFunction
 from environment.memory import MemoryBuffer
 
 
-def make_env(
+def make_parallel_pettingzoo_env(
     engine_adapter: BattlesnakeEngineForParallelEnv,
     observation_transformer: ObservationTransformer,
     reward_function: RewardFunction,
@@ -24,6 +25,25 @@ def make_env(
         memory_buffer=memory_buffer,
         configuration=configuration,
     )
+    env = supersuit.black_death_v3(env)
+    return env
+
+
+def make_gymnasium_vec_env(
+    engine_adapter: BattlesnakeEngineForParallelEnv,
+    observation_transformer: ObservationTransformer,
+    reward_function: RewardFunction,
+    memory_buffer: MemoryBuffer,
+    configuration: BattlesnakeEnvironmentConfiguration,
+):
+    env = make_parallel_pettingzoo_env(
+        engine_adapter=engine_adapter,
+        observation_transformer=observation_transformer,
+        reward_function=reward_function,
+        memory_buffer=memory_buffer,
+        configuration=configuration,
+    )
+    env = supersuit.pettingzoo_env_to_vec_env_v1(env)
     return env
 
 
