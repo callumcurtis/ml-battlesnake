@@ -18,7 +18,7 @@ from environment import (
     adapt_engine_for_parallel_env,
     BattlesnakeEnvironmentConfiguration,
     Movement,
-    ObservationToImage,
+    ObservationToFlattenedArray,
     MemoryBuffer,
     RewardWinLoseDrawSurvival
 )
@@ -35,7 +35,7 @@ add_default_mode_to_render_args(ConcatVecEnv)
 
 engine = BattlesnakeDllEngine(paths.BIN_DIR / "rules.dll")
 configuration = BattlesnakeEnvironmentConfiguration(possible_agents=["agent_0"], game_type="solo")
-observation_transformer = ObservationToImage(configuration, egocentric=True)
+observation_transformer = ObservationToFlattenedArray(configuration)
 engine_adapter = adapt_engine_for_parallel_env(engine)
 reward_function = RewardWinLoseDrawSurvival()
 memory_buffer = MemoryBuffer(0)
