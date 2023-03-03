@@ -50,7 +50,7 @@ env = make_env(
 env = supersuit.black_death_v3(env)
 env = supersuit.flatten_v0(env)
 env = supersuit.pettingzoo_env_to_vec_env_v1(env)
-env = supersuit.concat_vec_envs_v1(env, 1, num_cpus=1, base_class="stable_baselines3")
+env = supersuit.concat_vec_envs_v1(env, 4, num_cpus=4, base_class="stable_baselines3")
 
 def combine_truncation_and_termination_into_done_in_steps(env):
     def make_wrapper(wrapped):
