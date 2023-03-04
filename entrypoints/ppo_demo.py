@@ -24,23 +24,6 @@ from environment import (
 )
 
 
-def add_ignored_mode_to_render_args(env):
-    """
-    Add an unused mode parameter to the render method of the given environment.
-
-    stable-baselines 3 is using the render method signature from gymnasium < 0.25.0,
-    meaning that it provides an unexpected mode argument to the wrapped render method.
-    This is a workaround to add an ignored mode parameter to the wrapped render method.
-    
-    TODO: Create a wrapper class dedicated to this workaround.
-    TODO: Remove this workaround once stable-baselines 3 is updated to use gymnasium >= 0.25.0
-    """
-    wrapped = env.render
-    def wrapper(mode='human'):
-        return wrapped()
-    env.render = wrapper
-    return env
-
 def combine_truncation_and_termination_into_done_in_steps(env):
     """
     Combine the truncation and termination arrays into a single done array in the step method of the given environment.
@@ -65,6 +48,7 @@ def combine_truncation_and_termination_into_done_in_steps(env):
     env.step = make_wrapper(env.step)
     env.step_wait = make_wrapper(env.step_wait)
     return env
+
 
 def make_logarithmic_learning_rate_schedule(initial: float):
     def schedule(progress_remaining: float) -> float:
