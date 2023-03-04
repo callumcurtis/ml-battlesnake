@@ -129,6 +129,8 @@ class ArgumentParser:
     
     def parse_args(self) -> Arguments:
         args = self._parser.parse_args()
+        if not args.train and not args.demo:
+            self._parser.error("Either --train or --demo must be specified")
         return Arguments(
             num_agents=args.num_agents,
             num_envs=args.num_envs,
