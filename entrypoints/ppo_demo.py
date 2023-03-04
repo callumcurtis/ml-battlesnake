@@ -5,6 +5,7 @@ sys.path.append("")
 sys.modules["gym"] = gymnasium
 
 import pathlib
+import argparse
 
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecMonitor
@@ -56,17 +57,86 @@ def make_logarithmic_learning_rate_schedule(initial: float):
     return schedule
 
 
-def main():
-    num_agents = 4
-    num_envs = 4
-    # Anecdotally: agents(1)=0.0003, agents(4)=0.000003
-    initial_learning_rate = 0.000003
-    total_timesteps = 3_000_000
-    train = True
-    base_model_name = "model"
+class Arguments:
 
-    agents = [f"agent_{i}" for i in range(num_agents)]
-    game_type = "solo" if num_agents == 1 else "standard"
+    def __init__(
+        self,
+        num_agents: int,
+        num_envs: int,
+        initial_learning_rate: float,
+        total_timesteps: int,
+        train: bool,
+        base_model_name: str,
+    ) -> None:
+        self.num_agents = num_agents
+        self.num_envs = num_envs
+        self.initial_learning_rate = initial_learning_rate
+        self.total_timesteps = total_timesteps
+        self.train = train
+        self.base_model_name = base_model_name
+
+
+class ArgumentParser:
+
+    def __init__(self) -> None:
+        parser = argparse.ArgumentParser(
+            prog="PPO Demo",
+            description="Trains a PPO agent to play Battlesnake",
+        )
+        parser.add_argument(
+            "--num-agents",
+            type=int,
+            default=4,
+            help="Number of agents to train",
+        )
+        parser.add_argument(
+            "--num-envs",
+            type=int,
+            default=4,
+            help="Number of environments to train on",
+        )
+        parser.add_argument(
+            "--initial-learning-rate",
+            type=float,
+            default=0.000003,
+            help="Initial learning rate",
+        )
+        parser.add_argument(
+            "--total-timesteps",
+            type=int,
+            default=3_000_000,
+            help="Total number of timesteps to train for",
+        )
+        parser.add_argument(
+            "--train",
+            action="store_true",
+            help="Train the model, otherwise just demo it",
+        )
+        parser.add_argument(
+            "--base-model-name",
+            type=str,
+            default="model",
+            help="Base name of the model file",
+        )
+        self._parser = parser
+    
+    def parse_args(self) -> Arguments:
+        args = self._parser.parse_args()
+        return Arguments(
+            num_agents=args.num_agents,
+            num_envs=args.num_envs,
+            initial_learning_rate=args.initial_learning_rate,
+            total_timesteps=args.total_timesteps,
+            train=args.train,
+            base_model_name=args.base_model_name,
+        )
+
+
+def main():
+    args = ArgumentParser().parse_args()
+
+    agents = [f"agent_{i}" for i in range(args.num_agents)]
+    game_type = "solo" if args.num_agents == 1 else "standard"
     engine = BattlesnakeDllEngine(paths.BIN_DIR / "rules.dll")
     configuration = BattlesnakeEnvironmentConfiguration(possible_agents=agents, game_type=game_type)
     observation_transformer = ObservationToFlattenedArray(configuration)
@@ -82,12 +152,12 @@ def main():
         configuration,
     )
 
-    experiment_name = f"ppo-agents({num_agents})"
-    model_file = paths.RESULTS_DIR / experiment_name / (base_model_name + ".zip")
+    experiment_name = f"ppo-agents({args.num_agents})"
+    model_file = paths.RESULTS_DIR / experiment_name / (args.base_model_name + ".zip")
     tensorboard_log_dir = paths.RESULTS_DIR / experiment_name / "tensorboard"
 
-    if train:
-        env = supersuit.concat_vec_envs_v1(base_env, num_envs, num_cpus=num_envs, base_class="stable_baselines3")
+    if args.train:
+        env = supersuit.concat_vec_envs_v1(base_env, args.num_envs, num_cpus=args.num_envs, base_class="stable_baselines3")
         env = combine_truncation_and_termination_into_done_in_steps(env)
         env = VecMonitor(env)
         if pathlib.Path(model_file).exists():
@@ -98,9 +168,9 @@ def main():
                 env,
                 verbose=1,
                 tensorboard_log=tensorboard_log_dir,
-                learning_rate=make_logarithmic_learning_rate_schedule(initial_learning_rate),
+                learning_rate=make_logarithmic_learning_rate_schedule(args.initial_learning_rate),
             )
-        model.learn(total_timesteps=total_timesteps)
+        model.learn(total_timesteps=args.total_timesteps)
         model.save(model_file)
         env.close()
 
