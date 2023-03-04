@@ -98,15 +98,14 @@ def main():
         configuration,
     )
 
-    env = supersuit.concat_vec_envs_v1(base_env, num_envs, num_cpus=num_envs, base_class="stable_baselines3")
-    env = combine_truncation_and_termination_into_done_in_steps(env)
-    env = VecMonitor(env)
-
     experiment_name = f"ppo-agents({num_agents})"
     model_file = paths.RESULTS_DIR / experiment_name / (base_model_name + ".zip")
     tensorboard_log_dir = paths.RESULTS_DIR / experiment_name / "tensorboard"
 
     if train:
+        env = supersuit.concat_vec_envs_v1(base_env, num_envs, num_cpus=num_envs, base_class="stable_baselines3")
+        env = combine_truncation_and_termination_into_done_in_steps(env)
+        env = VecMonitor(env)
         if pathlib.Path(model_file).exists():
             model = PPO.load(model_file, env, verbose=1, tensorboard_log=tensorboard_log_dir)
         else:
@@ -119,6 +118,7 @@ def main():
             )
         model.learn(total_timesteps=total_timesteps)
         model.save(model_file)
+        env.close()
 
     model = PPO.load(model_file, env=None)
     env = base_env
@@ -130,7 +130,8 @@ def main():
         obs, rewards, terminations, truncations, info = env.step(actions)
         if (terminations | truncations).all():
             print(f"Episode finished after actions({list(Movement(action) for action in actions)}), and reward({rewards})")
-            return
+            break
+    env.close()
 
 
 if __name__ == "__main__":
