@@ -66,6 +66,7 @@ class Arguments:
         initial_learning_rate: float,
         total_timesteps: int,
         train: bool,
+        demo: bool,
         base_model_name: str,
     ) -> None:
         self.num_agents = num_agents
@@ -73,6 +74,7 @@ class Arguments:
         self.initial_learning_rate = initial_learning_rate
         self.total_timesteps = total_timesteps
         self.train = train
+        self.demo = demo
         self.base_model_name = base_model_name
 
 
@@ -110,7 +112,12 @@ class ArgumentParser:
         parser.add_argument(
             "--train",
             action="store_true",
-            help="Train the model, otherwise just demo it",
+            help="Train the model",
+        )
+        parser.add_argument(
+            "--demo",
+            action="store_true",
+            help="Demo the model",
         )
         parser.add_argument(
             "--base-model-name",
@@ -128,8 +135,52 @@ class ArgumentParser:
             initial_learning_rate=args.initial_learning_rate,
             total_timesteps=args.total_timesteps,
             train=args.train,
+            demo=args.demo,
             base_model_name=args.base_model_name,
         )
+
+
+def train(
+    env,
+    num_envs,
+    model_file,
+    tensorboard_log_dir,
+    initial_learning_rate,
+    total_timesteps,
+):
+    env = supersuit.concat_vec_envs_v1(env, num_envs, num_cpus=num_envs, base_class="stable_baselines3")
+    env = combine_truncation_and_termination_into_done_in_steps(env)
+    env = VecMonitor(env)
+    if pathlib.Path(model_file).exists():
+        model = PPO.load(model_file, env, verbose=1, tensorboard_log=tensorboard_log_dir)
+    else:
+        model = PPO(
+            'MlpPolicy',
+            env,
+            verbose=1,
+            tensorboard_log=tensorboard_log_dir,
+            learning_rate=make_logarithmic_learning_rate_schedule(initial_learning_rate),
+        )
+    model.learn(total_timesteps=total_timesteps)
+    model.save(model_file)
+    env.close()
+
+
+def demo(
+    env,
+    model_file,
+):
+    model = PPO.load(model_file, env=None)
+    obs = env.reset()
+    dones = [False, False]
+    while not all(dones):
+        env.render()
+        actions, _ = model.predict(obs)
+        obs, rewards, terminations, truncations, info = env.step(actions)
+        if (terminations | truncations).all():
+            print(f"Episode finished after actions({list(Movement(action) for action in actions)}), and reward({rewards})")
+            break
+    env.close()
 
 
 def main():
@@ -137,9 +188,9 @@ def main():
 
     agents = [f"agent_{i}" for i in range(args.num_agents)]
     game_type = "solo" if args.num_agents == 1 else "standard"
-    engine = BattlesnakeDllEngine(paths.BIN_DIR / "rules.dll")
     configuration = BattlesnakeEnvironmentConfiguration(possible_agents=agents, game_type=game_type)
     observation_transformer = ObservationToFlattenedArray(configuration)
+    engine = BattlesnakeDllEngine(paths.BIN_DIR / "rules.dll")
     engine_adapter = adapt_engine_for_parallel_env(engine)
     reward_function = RewardWinLoseDrawSurvival()
     memory_buffer = MemoryBuffer(0)
@@ -157,35 +208,20 @@ def main():
     tensorboard_log_dir = paths.RESULTS_DIR / experiment_name / "tensorboard"
 
     if args.train:
-        env = supersuit.concat_vec_envs_v1(base_env, args.num_envs, num_cpus=args.num_envs, base_class="stable_baselines3")
-        env = combine_truncation_and_termination_into_done_in_steps(env)
-        env = VecMonitor(env)
-        if pathlib.Path(model_file).exists():
-            model = PPO.load(model_file, env, verbose=1, tensorboard_log=tensorboard_log_dir)
-        else:
-            model = PPO(
-                'MlpPolicy',
-                env,
-                verbose=1,
-                tensorboard_log=tensorboard_log_dir,
-                learning_rate=make_logarithmic_learning_rate_schedule(args.initial_learning_rate),
-            )
-        model.learn(total_timesteps=args.total_timesteps)
-        model.save(model_file)
-        env.close()
-
-    model = PPO.load(model_file, env=None)
-    env = base_env
-    obs = env.reset()
-    dones = [False, False]
-    while not all(dones):
-        env.render()
-        actions, _ = model.predict(obs)
-        obs, rewards, terminations, truncations, info = env.step(actions)
-        if (terminations | truncations).all():
-            print(f"Episode finished after actions({list(Movement(action) for action in actions)}), and reward({rewards})")
-            break
-    env.close()
+        train(
+            env=base_env,
+            num_envs=args.num_envs,
+            model_file=model_file,
+            tensorboard_log_dir=tensorboard_log_dir,
+            initial_learning_rate=args.initial_learning_rate,
+            total_timesteps=args.total_timesteps,
+        )
+    
+    if args.demo:
+        demo(
+            env=base_env,
+            model_file=model_file,
+        )
 
 
 if __name__ == "__main__":
