@@ -9,6 +9,7 @@ import argparse
 
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecMonitor
+from stable_baselines3.common.callbacks import BaseCallback
 import supersuit
 import numpy as np
 
@@ -65,17 +66,21 @@ class Arguments:
         num_envs: int,
         initial_learning_rate: float,
         total_timesteps: int,
+        tensorboard_log_dir: pathlib.Path,
         train: bool,
         demo: bool,
-        base_model_name: str,
+        model_output_path: pathlib.Path,
+        model_input_path: pathlib.Path,
     ) -> None:
         self.num_agents = num_agents
         self.num_envs = num_envs
         self.initial_learning_rate = initial_learning_rate
         self.total_timesteps = total_timesteps
+        self.tensorboard_log_dir = tensorboard_log_dir
         self.train = train
         self.demo = demo
-        self.base_model_name = base_model_name
+        self.model_output_path = model_output_path
+        self.model_input_path = model_input_path
 
 
 class ArgumentParser:
@@ -110,6 +115,11 @@ class ArgumentParser:
             help="Total number of timesteps to train for",
         )
         parser.add_argument(
+            "--tensorboard-log-dir",
+            type=str,
+            help="Path to save tensorboard logs to, defaults to the same directory as the model output",
+        )
+        parser.add_argument(
             "--train",
             action="store_true",
             help="Train the model",
@@ -120,10 +130,14 @@ class ArgumentParser:
             help="Demo the model",
         )
         parser.add_argument(
-            "--base-model-name",
+            "--model-output-path",
             type=str,
-            default="model",
-            help="Base name of the model file",
+            help="Path to save the model to",
+        )
+        parser.add_argument(
+            "--model-input-path",
+            type=str,
+            help="Path to load the model from",
         )
         self._parser = parser
     
@@ -131,41 +145,116 @@ class ArgumentParser:
         args = self._parser.parse_args()
         if not args.train and not args.demo:
             self._parser.error("Either --train or --demo must be specified")
+        model_output_path = pathlib.Path(args.model_output_path)
+        model_input_path = pathlib.Path(args.model_input_path)
+        if args.train and not model_output_path:
+            self._parser.error("Model output path must be specified when training")
+        if args.train and model_output_path.exists():
+            self._parser.error(f"Model output path {model_output_path} already exists")
+        if args.demo and not (model_input_path.exists() or args.train):
+            self._parser.error(f"To demo, model input path {model_input_path} must exist beforehand or --train must be specified")
+        if args.train and args.tensorboard_log_dir is None:
+            args.tensorboard_log_dir = model_output_path.parent
         return Arguments(
             num_agents=args.num_agents,
             num_envs=args.num_envs,
             initial_learning_rate=args.initial_learning_rate,
             total_timesteps=args.total_timesteps,
+            tensorboard_log_dir=args.tensorboard_log_dir,
             train=args.train,
             demo=args.demo,
-            base_model_name=args.base_model_name,
+            model_output_path=model_output_path,
+            model_input_path=model_input_path,
         )
+
+
+class CheckpointForRecoveryCallback(BaseCallback):
+
+    def __init__(
+        self,
+        model_path: pathlib.Path,
+        save_freq: int,
+        save_path: pathlib.Path,
+        name_prefix: str,
+        verbose: int = 0,
+    ):
+        super().__init__(verbose)
+        self._model_path = model_path
+        self._save_freq = save_freq
+        self._save_path = save_path
+        self._name_prefix = name_prefix
+
+        self.num_checkpointed_timesteps = 0
+        self.num_timesteps_since_last_checkpoint = 0
+
+    @property
+    def num_timesteps_across_restarts(self) -> int:
+        return self.num_checkpointed_timesteps + self.num_timesteps_since_last_checkpoint
+
+    def _init_callback(self) -> None:
+        self._save_path.mkdir(exist_ok=True)
+        self.num_timesteps_since_last_checkpoint = 0
+
+    def last_checkpoint_path(self) -> pathlib.Path:
+        if self.num_checkpointed_timesteps == 0:
+            return self._model_path
+        return self._checkpoint_path(self.num_checkpointed_timesteps)
+    
+    def _checkpoint_path(self, num_timesteps: int) -> str:
+        return self._save_path / f"{self._name_prefix}_timesteps({num_timesteps}).zip"
+
+    def _on_step(self) -> bool:
+        self.num_timesteps_since_last_checkpoint += self.model.n_envs
+        if self.num_timesteps_since_last_checkpoint >= self._save_freq:
+            next_checkpoint_timesteps = self.num_timesteps_across_restarts
+            self.model.save(self._checkpoint_path(next_checkpoint_timesteps))
+            self.num_checkpointed_timesteps = next_checkpoint_timesteps
+            self.num_timesteps_since_last_checkpoint = 0
+        return True
+    
+    def on_restart(self):
+        self.num_timesteps_since_last_checkpoint = 0
 
 
 def train(
-    env,
+    base_env,
     num_envs,
-    model_file,
-    tensorboard_log_dir,
-    initial_learning_rate,
-    total_timesteps,
+    model_input_path: pathlib.Path,
+    model_output_path: pathlib.Path,
+    tensorboard_log_dir: pathlib.Path,
+    initial_learning_rate: float,
+    total_timesteps: int,
 ):
-    env = supersuit.concat_vec_envs_v1(env, num_envs, num_cpus=num_envs, base_class="stable_baselines3")
-    env = combine_truncation_and_termination_into_done_in_steps(env)
-    env = VecMonitor(env)
-    if pathlib.Path(model_file).exists():
-        model = PPO.load(model_file, env, verbose=1, tensorboard_log=tensorboard_log_dir)
-    else:
-        model = PPO(
-            'MlpPolicy',
-            env,
-            verbose=1,
-            tensorboard_log=tensorboard_log_dir,
-            learning_rate=make_logarithmic_learning_rate_schedule(initial_learning_rate),
-        )
-    model.learn(total_timesteps=total_timesteps)
-    model.save(model_file)
-    env.close()
+    recovery_callback = CheckpointForRecoveryCallback(
+        model_path=model_input_path,
+        save_freq=1_000_000,
+        save_path=pathlib.Path(model_output_path).parent,
+        name_prefix=model_output_path.stem,
+    )
+    model_path = model_input_path    
+
+    while recovery_callback.num_timesteps_across_restarts < total_timesteps:
+        env = supersuit.concat_vec_envs_v1(base_env, num_envs, num_cpus=num_envs, base_class="stable_baselines3")
+        env = combine_truncation_and_termination_into_done_in_steps(env)
+        env = VecMonitor(env)
+        if model_path.exists():
+            model = PPO.load(model_path, env, verbose=1, tensorboard_log=tensorboard_log_dir)
+        else:
+            model = PPO(
+                'MlpPolicy',
+                env,
+                verbose=1,
+                tensorboard_log=tensorboard_log_dir,
+                learning_rate=make_logarithmic_learning_rate_schedule(initial_learning_rate),
+            )
+        try:
+            remaining_timesteps = total_timesteps - recovery_callback.num_timesteps_across_restarts
+            model.learn(total_timesteps=remaining_timesteps, callback=recovery_callback)
+            model.save(model_output_path)
+        except (OSError, EOFError):
+            recovery_callback.on_restart()
+            model_path = recovery_callback.last_checkpoint_path()
+        env.close()
 
 
 def demo(
@@ -205,21 +294,19 @@ def main():
         configuration,
     )
 
-    experiment_name = f"ppo-agents({args.num_agents})"
-    model_file = paths.RESULTS_DIR / experiment_name / (args.base_model_name + ".zip")
-    tensorboard_log_dir = paths.RESULTS_DIR / experiment_name / "tensorboard"
-
     if args.train:
         train(
-            env=base_env,
+            base_env=base_env,
             num_envs=args.num_envs,
-            model_file=model_file,
-            tensorboard_log_dir=tensorboard_log_dir,
+            model_input_path=args.model_input_path,
+            model_output_path=args.model_output_path,
+            tensorboard_log_dir=args.tensorboard_log_dir,
             initial_learning_rate=args.initial_learning_rate,
             total_timesteps=args.total_timesteps,
         )
     
     if args.demo:
+        model_file = args.model_output_path if args.train else args.model_input_path
         demo(
             env=base_env,
             model_file=model_file,
