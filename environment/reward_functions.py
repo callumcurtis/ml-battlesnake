@@ -16,6 +16,24 @@ class RewardFunction(abc.ABC):
         pass
 
 
+class RewardChain(RewardFunction):
+
+    def __init__(self, reward_functions: list[RewardFunction]):
+        self.reward_functions = reward_functions
+    
+    def calculate(
+        self,
+        memory_buffer: MemoryBuffer,
+        this_timestep_builder: TimestepBuilder,
+    ) -> TimestepBuilder:
+        for reward_function in self.reward_functions:
+            this_timestep_builder = reward_function.calculate(
+                memory_buffer=memory_buffer,
+                this_timestep_builder=this_timestep_builder,
+            )
+        return this_timestep_builder
+
+
 class RewardWinLoseDrawSurvival(RewardFunction):
 
     def __init__(
