@@ -153,14 +153,20 @@ class ArgumentParser:
         args = self._parser.parse_args()
         if not args.train and not args.demo:
             self._parser.error("Either --train or --demo must be specified")
-        model_output_path = pathlib.Path(args.model_output_path)
-        model_input_path = pathlib.Path(args.model_input_path)
-        if args.train and not model_output_path:
-            self._parser.error("Model output path must be specified when training")
+        model_output_path = pathlib.Path(args.model_output_path) if args.model_output_path else None
+        model_input_path = pathlib.Path(args.model_input_path) if args.model_input_path else None
+        if args.train and model_output_path is None:
+            self._parser.error("To train, model output path must be specified")
         if args.train and model_output_path.exists():
             self._parser.error(f"Model output path {model_output_path} already exists")
-        if args.demo and not (model_input_path.exists() or args.train):
-            self._parser.error(f"To demo, model input path {model_input_path} must exist beforehand or --train must be specified")
+        if args.train and model_output_path.suffix != ".zip":
+            self._parser.error(f"Model output path {model_output_path} must have .zip extension")
+        if args.demo and not args.train and model_input_path is None:
+            self._parser.error("To demo, model input path must be specified or --train must be specified")
+        if args.demo and not args.train and not model_input_path.exists():
+            self._parser.error(f"Model input path {model_input_path} does not exist")
+        if args.demo and not args.train and model_input_path.suffix != ".zip":
+            self._parser.error(f"Model input path {model_input_path} must have .zip extension")
         if args.train and args.tensorboard_log_dir is None:
             args.tensorboard_log_dir = model_output_path.parent
         return Arguments(
