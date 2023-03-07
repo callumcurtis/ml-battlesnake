@@ -5,6 +5,7 @@ sys.path.append("")
 sys.modules["gym"] = gymnasium
 
 import pathlib
+from typing import Optional
 import argparse
 
 from stable_baselines3 import PPO
@@ -70,8 +71,8 @@ class Arguments:
         checkpoint_period: int,
         train: bool,
         demo: bool,
-        model_output_path: pathlib.Path,
-        model_input_path: pathlib.Path,
+        model_output_path: Optional[pathlib.Path],
+        model_input_path: Optional[pathlib.Path],
     ) -> None:
         self.num_agents = num_agents
         self.num_envs = num_envs
@@ -187,14 +188,12 @@ class CheckpointForRecoveryCallback(BaseCallback):
 
     def __init__(
         self,
-        model_path: pathlib.Path,
         save_period: int,
         save_path: pathlib.Path,
         name_prefix: str,
         verbose: int = 0,
     ):
         super().__init__(verbose)
-        self._model_path = model_path
         self._save_period = save_period
         self._save_path = save_path
         self._name_prefix = name_prefix
@@ -210,9 +209,9 @@ class CheckpointForRecoveryCallback(BaseCallback):
         self._save_path.mkdir(exist_ok=True)
         self.num_timesteps_since_last_checkpoint = 0
 
-    def last_checkpoint_path(self) -> pathlib.Path:
+    def last_checkpoint_path(self) -> Optional[pathlib.Path]:
         if self.num_checkpointed_timesteps == 0:
-            return self._model_path
+            return
         return self._checkpoint_path(self.num_checkpointed_timesteps)
     
     def _checkpoint_path(self, num_timesteps: int) -> str:
@@ -234,7 +233,7 @@ class CheckpointForRecoveryCallback(BaseCallback):
 def train(
     base_env,
     num_envs,
-    model_input_path: pathlib.Path,
+    model_input_path: Optional[pathlib.Path],
     model_output_path: pathlib.Path,
     tensorboard_log_dir: pathlib.Path,
     initial_learning_rate: float,
@@ -242,35 +241,34 @@ def train(
     total_timesteps: int,
 ):
     recovery_callback = CheckpointForRecoveryCallback(
-        model_path=model_input_path,
         save_period=checkpoint_period,
         save_path=pathlib.Path(model_output_path).parent,
         name_prefix=model_output_path.stem,
     )
-    model_path = model_input_path    
+
+    model_load_path = model_input_path    
 
     while recovery_callback.num_timesteps_across_restarts < total_timesteps:
         env = supersuit.concat_vec_envs_v1(base_env, num_envs, num_cpus=num_envs, base_class="stable_baselines3")
         env = combine_truncation_and_termination_into_done_in_steps(env)
         env = VecMonitor(env)
-        if model_path.exists():
-            model = PPO.load(model_path, env, verbose=1, tensorboard_log=tensorboard_log_dir)
-        else:
-            model = PPO(
-                'MlpPolicy',
-                env,
-                verbose=1,
-                tensorboard_log=tensorboard_log_dir,
-                learning_rate=make_logarithmic_learning_rate_schedule(initial_learning_rate),
-            )
+        model = PPO(
+            'MlpPolicy',
+            env,
+            verbose=1,
+            tensorboard_log=tensorboard_log_dir,
+            learning_rate=make_logarithmic_learning_rate_schedule(initial_learning_rate),
+        )
+        if model_load_path is not None:
+            model.set_parameters(model_load_path, exact_match=True)
         remaining_timesteps = total_timesteps - recovery_callback.num_timesteps_across_restarts
         try:
             model.learn(total_timesteps=remaining_timesteps, callback=recovery_callback)
             model.save(model_output_path)
         except (OSError, EOFError):
             recovery_callback.on_restart()
-            model_path = recovery_callback.last_checkpoint_path()
-        env.close()
+            model_load_path = recovery_callback.last_checkpoint_path()
+        model.env.close()
 
 
 def demo(
