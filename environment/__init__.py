@@ -3,5 +3,5 @@ from .adapters import BattlesnakeEngineForParallelEnv, adapt_engine_for_parallel
 from .engines import BattlesnakeEngine, BattlesnakeDllEngine, Movement
 from .env import make_parallel_pettingzoo_env, make_gymnasium_vec_env, BattlesnakeEnvironment
 from .observation_transformers import ObservationTransformer, ObservationToImage, ObservationToFlattenedArray
-from .reward_functions import RewardFunction, RewardChain, RewardWinLoseDraw, RewardSurvival, RewardOpponentDeath
+from .reward_functions import RewardFunction, RewardChain, RewardWinLoseDraw, RewardSurvival, RewardOpponentDeath, RewardFoodConsumption
 from .memory import MemoryBuffer

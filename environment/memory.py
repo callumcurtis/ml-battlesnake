@@ -11,7 +11,6 @@ class MemoryBuffer(collections.abc.Sequence):
         self,
         buffer_size: int,
     ):
-        self.size = buffer_size
         self._buffer = collections.deque(maxlen=buffer_size)
     
     def reset(self, initial_state: InitialState) -> None:

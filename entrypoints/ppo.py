@@ -27,6 +27,7 @@ from environment import (
     RewardWinLoseDraw,
     RewardSurvival,
     RewardOpponentDeath,
+    RewardFoodConsumption,
 )
 
 
@@ -305,6 +306,7 @@ def main():
             RewardWinLoseDraw(),
             RewardSurvival(),
             RewardOpponentDeath(),
+            RewardFoodConsumption(),
         ]
     )
     memory_buffer = MemoryBuffer(reward_function.required_memory_size)

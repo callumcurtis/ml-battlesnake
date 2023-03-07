@@ -1,4 +1,5 @@
 import abc
+from typing import Callable
 
 from environment.memory import MemoryBuffer
 from environment.types import TimestepBuilder
@@ -35,7 +36,7 @@ class RewardChain(RewardFunction):
         memory_buffer: MemoryBuffer,
         this_timestep_builder: TimestepBuilder,
     ) -> dict[str, float]:
-        assert memory_buffer.size >= self.required_memory_size
+        assert len(memory_buffer) >= self.required_memory_size
         aggregate_rewards = {}
         for reward_function in self.reward_functions:
             rewards = reward_function.calculate(
@@ -177,3 +178,45 @@ class RewardOpponentDeath(RewardFunction):
     @property
     def required_memory_size(self) -> int:
         return 0
+
+
+class RewardFoodConsumption(RewardFunction):
+
+    def __init__(
+        self,
+        reward_schedule: Callable[[int], float] = lambda health: 0.01 * (0.98 ** health),
+    ):
+        self.reward_schedule = reward_schedule
+    
+    def calculate(
+        self,
+        memory_buffer: MemoryBuffer,
+        this_timestep_builder: TimestepBuilder,
+    ) -> dict[str, float]:
+        assert this_timestep_builder.raw_observations
+        assert len(memory_buffer) >= self.required_memory_size
+
+        previous_raw_observations = memory_buffer[-1].raw_observations
+        current_raw_observations = this_timestep_builder.raw_observations
+        current_snakes = set(current_raw_observations.keys())
+        previous_health_by_snake = {
+            snake: previous_raw_observations[snake]["you"]["health"]
+            for snake in current_snakes
+        }
+        current_health_by_snake = {
+            snake: current_raw_observations[snake]["you"]["health"]
+            for snake in current_snakes
+        }
+
+        rewards = {
+            snake: self.reward_schedule(previous_health_by_snake[snake])
+            if current_health_by_snake[snake] >= previous_health_by_snake[snake]
+            else self.NO_REWARD
+            for snake in current_snakes
+        }
+
+        return rewards
+
+    @property
+    def required_memory_size(self) -> int:
+        return 1
