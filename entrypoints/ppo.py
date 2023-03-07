@@ -263,8 +263,8 @@ def train(
                 tensorboard_log=tensorboard_log_dir,
                 learning_rate=make_logarithmic_learning_rate_schedule(initial_learning_rate),
             )
+        remaining_timesteps = total_timesteps - recovery_callback.num_timesteps_across_restarts
         try:
-            remaining_timesteps = total_timesteps - recovery_callback.num_timesteps_across_restarts
             model.learn(total_timesteps=remaining_timesteps, callback=recovery_callback)
             model.save(model_output_path)
         except (OSError, EOFError):
