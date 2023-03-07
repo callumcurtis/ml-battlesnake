@@ -23,7 +23,7 @@ from environment import (
     Movement,
     ObservationToFlattenedArray,
     MemoryBuffer,
-    RewardWinLoseDrawSurvival
+    RewardWinLoseDraw
 )
 
 
@@ -297,7 +297,7 @@ def main():
     observation_transformer = ObservationToFlattenedArray(configuration)
     engine = BattlesnakeDllEngine(paths.BIN_DIR / "rules.dll")
     engine_adapter = adapt_engine_for_parallel_env(engine)
-    reward_function = RewardWinLoseDrawSurvival()
+    reward_function = RewardWinLoseDraw()
     memory_buffer = MemoryBuffer(0)
 
     base_env = make_gymnasium_vec_env(
