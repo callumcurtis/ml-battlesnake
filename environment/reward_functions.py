@@ -79,3 +79,24 @@ class RewardWinLoseDraw(RewardFunction):
             for snake, is_terminated in this_timestep_builder.terminations.items()
         }
         return rewards
+
+
+class RewardSurvival(RewardFunction):
+
+    def __init__(
+        self,
+        reward: float = 0.001,
+    ):
+        self.reward = reward
+    
+    def calculate(
+        self,
+        memory_buffer: MemoryBuffer,
+        this_timestep_builder: TimestepBuilder,
+    ) -> dict[str, float]:
+        assert this_timestep_builder.terminations
+        rewards = {
+            snake: self.NO_REWARD if is_terminated else self.reward
+            for snake, is_terminated in this_timestep_builder.terminations.items()
+        }
+        return rewards
