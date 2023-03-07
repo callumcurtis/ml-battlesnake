@@ -93,7 +93,7 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
 
         initial_state_builder.with_observations({
             agent: self.observation_transformer.transform(obs)
-            for agent, obs in initial_state_builder.observations.items()
+            for agent, obs in initial_state_builder.raw_observations.items()
         })
         
         initial_state = initial_state_builder.build()
@@ -127,7 +127,7 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
             agent: self.observation_transformer.transform(obs)
             if agent in self.agents
             else self.observation_transformer.empty_observation()
-            for agent, obs in timestep_builder.observations.items()
+            for agent, obs in timestep_builder.raw_observations.items()
         })
 
         timestep = timestep_builder.build()

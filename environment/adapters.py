@@ -71,7 +71,7 @@ class BattlesnakeDllEngineForParallelEnv(BattlesnakeEngineForParallelEnv):
             response = self._engine.reset(engine_config)
             observations = {agent: response[agent]["observation"] for agent in env_config.possible_agents}
             infos = {agent: info if (info := response[agent]["info"]) else {} for agent in env_config.possible_agents}
-            return initial_state_builder.with_observations(observations).with_infos(infos)
+            return initial_state_builder.with_raw_observations(observations).with_infos(infos)
 
         def step(
             self,
@@ -87,7 +87,7 @@ class BattlesnakeDllEngineForParallelEnv(BattlesnakeEngineForParallelEnv):
             terminations = {agent: response[agent]["done"] for agent in previously_alive_agents}
             infos = {agent: info if (info := response[agent]["info"]) else {} for agent in previously_alive_agents}
             return timestep_builder \
-                        .with_observations(observations) \
+                        .with_raw_observations(observations) \
                         .with_rewards(rewards) \
                         .with_terminations(terminations) \
                         .with_infos(infos)

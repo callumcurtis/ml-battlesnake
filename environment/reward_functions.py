@@ -16,6 +16,11 @@ class RewardFunction(abc.ABC):
     ) -> dict[str, float]:
         pass
 
+    @property
+    @abc.abstractmethod
+    def required_memory_size(self) -> int:
+        pass
+
 
 class RewardChain(RewardFunction):
 
@@ -30,6 +35,7 @@ class RewardChain(RewardFunction):
         memory_buffer: MemoryBuffer,
         this_timestep_builder: TimestepBuilder,
     ) -> dict[str, float]:
+        assert memory_buffer.size >= self.required_memory_size
         aggregate_rewards = {}
         for reward_function in self.reward_functions:
             rewards = reward_function.calculate(
@@ -37,8 +43,15 @@ class RewardChain(RewardFunction):
                 this_timestep_builder=this_timestep_builder,
             )
             for snake_id, reward in rewards.items():
-                aggregate_rewards[snake_id] += reward
+                aggregate_rewards[snake_id] = aggregate_rewards.get(snake_id, self.NO_REWARD) + reward
         return aggregate_rewards
+    
+    @property
+    def required_memory_size(self) -> int:
+        return max(
+            reward_function.required_memory_size
+            for reward_function in self.reward_functions
+        )
 
 
 class RewardWinLoseDraw(RewardFunction):
@@ -79,6 +92,10 @@ class RewardWinLoseDraw(RewardFunction):
             for snake, is_terminated in this_timestep_builder.terminations.items()
         }
         return rewards
+    
+    @property
+    def required_memory_size(self) -> int:
+        return 0
 
 
 class RewardSurvival(RewardFunction):
@@ -100,3 +117,63 @@ class RewardSurvival(RewardFunction):
             for snake, is_terminated in this_timestep_builder.terminations.items()
         }
         return rewards
+    
+    @property
+    def required_memory_size(self) -> int:
+        return 0
+
+
+class RewardOpponentDeath(RewardFunction):
+
+    def __init__(
+        self,
+        outlive_reward: float = 0.01,
+        collision_reward: float = 0.05,
+        consume_reward: float = 0.05,
+    ):
+        self.outlive_reward = outlive_reward
+        self.collision_reward = collision_reward
+        self.consume_reward = consume_reward
+    
+    def calculate(
+        self,
+        memory_buffer: MemoryBuffer,
+        this_timestep_builder: TimestepBuilder,
+    ) -> dict[str, float]:
+        assert this_timestep_builder.terminations
+        assert this_timestep_builder.raw_observations
+
+        snakes = list(this_timestep_builder.terminations.keys())
+        dead_snakes = [snake for snake in snakes if this_timestep_builder.terminations[snake]]
+        alive_snakes = [snake for snake in snakes if not this_timestep_builder.terminations[snake]]
+
+        if len(dead_snakes) == 0:
+            return {snake: self.NO_REWARD for snake in snakes}
+    
+        head_position_by_snake = {
+            snake: observation["you"]["head"]
+            for snake, observation in this_timestep_builder.raw_observations.items()
+        }
+        body_positions_by_snake = {
+            snake: observation["you"]["body"]
+            for snake, observation in this_timestep_builder.raw_observations.items()
+        }
+
+        rewards = {snake: self.NO_REWARD if snake in dead_snakes else self.outlive_reward for snake in snakes}
+        for dead_snake in dead_snakes:
+            dead_snake_head_position = head_position_by_snake[dead_snake]
+            reward = None
+            for alive_snake in alive_snakes:
+                if dead_snake_head_position == head_position_by_snake[alive_snake]:
+                    reward = self.consume_reward
+                elif dead_snake_head_position in body_positions_by_snake[alive_snake]:
+                    reward = self.collision_reward
+                if reward is not None:
+                    rewards[alive_snake] += reward
+                    break
+
+        return rewards
+
+    @property
+    def required_memory_size(self) -> int:
+        return 0
