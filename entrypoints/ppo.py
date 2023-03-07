@@ -67,6 +67,7 @@ class Arguments:
         initial_learning_rate: float,
         total_timesteps: int,
         tensorboard_log_dir: pathlib.Path,
+        checkpoint_period: int,
         train: bool,
         demo: bool,
         model_output_path: pathlib.Path,
@@ -77,6 +78,7 @@ class Arguments:
         self.initial_learning_rate = initial_learning_rate
         self.total_timesteps = total_timesteps
         self.tensorboard_log_dir = tensorboard_log_dir
+        self.checkpoint_period = checkpoint_period
         self.train = train
         self.demo = demo
         self.model_output_path = model_output_path
@@ -120,6 +122,12 @@ class ArgumentParser:
             help="Path to save tensorboard logs to, defaults to the same directory as the model output",
         )
         parser.add_argument(
+            "--checkpoint-period",
+            type=int,
+            default=1_000_000,
+            help="Number of timesteps between checkpoints",
+        )
+        parser.add_argument(
             "--train",
             action="store_true",
             help="Train the model",
@@ -161,6 +169,7 @@ class ArgumentParser:
             initial_learning_rate=args.initial_learning_rate,
             total_timesteps=args.total_timesteps,
             tensorboard_log_dir=args.tensorboard_log_dir,
+            checkpoint_period=args.checkpoint_period,
             train=args.train,
             demo=args.demo,
             model_output_path=model_output_path,
@@ -173,14 +182,14 @@ class CheckpointForRecoveryCallback(BaseCallback):
     def __init__(
         self,
         model_path: pathlib.Path,
-        save_freq: int,
+        save_period: int,
         save_path: pathlib.Path,
         name_prefix: str,
         verbose: int = 0,
     ):
         super().__init__(verbose)
         self._model_path = model_path
-        self._save_freq = save_freq
+        self._save_period = save_period
         self._save_path = save_path
         self._name_prefix = name_prefix
 
@@ -205,7 +214,7 @@ class CheckpointForRecoveryCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         self.num_timesteps_since_last_checkpoint += self.model.n_envs
-        if self.num_timesteps_since_last_checkpoint >= self._save_freq:
+        if self.num_timesteps_since_last_checkpoint >= self._save_period:
             next_checkpoint_timesteps = self.num_timesteps_across_restarts
             self.model.save(self._checkpoint_path(next_checkpoint_timesteps))
             self.num_checkpointed_timesteps = next_checkpoint_timesteps
@@ -223,11 +232,12 @@ def train(
     model_output_path: pathlib.Path,
     tensorboard_log_dir: pathlib.Path,
     initial_learning_rate: float,
+    checkpoint_period: int,
     total_timesteps: int,
 ):
     recovery_callback = CheckpointForRecoveryCallback(
         model_path=model_input_path,
-        save_freq=1_000_000,
+        save_period=checkpoint_period,
         save_path=pathlib.Path(model_output_path).parent,
         name_prefix=model_output_path.stem,
     )
@@ -302,6 +312,7 @@ def main():
             model_output_path=args.model_output_path,
             tensorboard_log_dir=args.tensorboard_log_dir,
             initial_learning_rate=args.initial_learning_rate,
+            checkpoint_period=args.checkpoint_period,
             total_timesteps=args.total_timesteps,
         )
     
