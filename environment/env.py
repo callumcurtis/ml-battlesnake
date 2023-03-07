@@ -109,7 +109,8 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
     def step(self, actions):
         timestep_builder = TimestepBuilder().with_actions(actions)
         timestep_builder = self.engine_adapter.step(timestep_builder)
-        timestep_builder = self.reward_function.calculate(self.memory_buffer, timestep_builder)
+
+        timestep_builder.with_rewards(self.reward_function.calculate(self.memory_buffer, timestep_builder))
 
         if self.engine_adapter.is_game_over():
             timestep_builder.with_terminations(dict.fromkeys(timestep_builder.terminations, True))

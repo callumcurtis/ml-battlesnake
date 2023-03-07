@@ -1,5 +1,4 @@
 import abc
-import copy
 
 from environment.memory import MemoryBuffer
 from environment.types import TimestepBuilder
@@ -14,26 +13,32 @@ class RewardFunction(abc.ABC):
         self,
         memory_buffer: MemoryBuffer,
         this_timestep_builder: TimestepBuilder,
-    ) -> TimestepBuilder:
+    ) -> dict[str, float]:
         pass
 
 
 class RewardChain(RewardFunction):
 
-    def __init__(self, reward_functions: list[RewardFunction]):
+    def __init__(
+        self,
+        reward_functions: list[RewardFunction],
+    ):
         self.reward_functions = reward_functions
     
     def calculate(
         self,
         memory_buffer: MemoryBuffer,
         this_timestep_builder: TimestepBuilder,
-    ) -> TimestepBuilder:
+    ) -> dict[str, float]:
+        aggregate_rewards = {}
         for reward_function in self.reward_functions:
-            this_timestep_builder = reward_function.calculate(
+            rewards = reward_function.calculate(
                 memory_buffer=memory_buffer,
                 this_timestep_builder=this_timestep_builder,
             )
-        return this_timestep_builder
+            for snake_id, reward in rewards.items():
+                aggregate_rewards[snake_id] += reward
+        return aggregate_rewards
 
 
 class RewardWinLoseDraw(RewardFunction):
@@ -54,9 +59,8 @@ class RewardWinLoseDraw(RewardFunction):
         self,
         memory_buffer: MemoryBuffer,
         this_timestep_builder: TimestepBuilder,
-    ) -> TimestepBuilder:
+    ) -> dict[str, float]:
         assert this_timestep_builder.terminations
-        this_timestep_builder = copy.deepcopy(this_timestep_builder)
         n_snakes = len(this_timestep_builder.terminations)
         n_dead_snakes = sum(
             is_terminated
@@ -74,5 +78,4 @@ class RewardWinLoseDraw(RewardFunction):
             snake: death_reward if is_terminated else survival_reward
             for snake, is_terminated in this_timestep_builder.terminations.items()
         }
-        this_timestep_builder.with_rewards(rewards)
-        return this_timestep_builder
+        return rewards
