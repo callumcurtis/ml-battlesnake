@@ -205,14 +205,16 @@ class ObservationToFlattenedArray(ObservationTransformer):
         if self._include_your_health:
             health_info.append(observation["you"]["health"])
         if self._include_enemy_health:
-            snake_dicts = observation["board"]["snakes"]
-            for snake_dict in snake_dicts:
-                if snake_dict["id"] == observation["you"]["id"]:
-                    continue
+            enemy_snake_dicts = [
+                snake_dict
+                for snake_dict in observation["board"]["snakes"]
+                if snake_dict["id"] != observation["you"]["id"]
+            ]
+            for snake_dict in enemy_snake_dicts:
                 health_info.append(coord_to_scalar(snake_dict["head"]))
                 health_info.append(snake_dict["health"])
-            num_missing_snakes = len(self._env_config.possible_agents) - len(snake_dicts)
-            health_info.extend([np.iinfo(self.DTYPE).max, 0] * num_missing_snakes)
+            num_missing_enemy_snakes = len(self._env_config.possible_agents) - len(enemy_snake_dicts) - 1
+            health_info.extend([np.iinfo(self.DTYPE).max, 0] * num_missing_enemy_snakes)
         if health_info:
             health_info = np.array(health_info, dtype=self.DTYPE)
             flat_array = np.concatenate((flat_array, health_info))
