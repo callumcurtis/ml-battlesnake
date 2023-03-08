@@ -5,7 +5,7 @@ sys.path.append("")
 sys.modules["gym"] = gymnasium
 
 import pathlib
-from typing import Optional
+from typing import Optional, Callable
 import argparse
 import threading
 
@@ -58,9 +58,13 @@ def combine_truncation_and_termination_into_done_in_steps(env):
     return env
 
 
-def make_logarithmic_learning_rate_schedule(initial: float):
+def make_logarithmic_learning_rate_schedule(
+    initial_learning_rate: float,
+    initial_progress: float,
+):
+    progress_remaining_at_start = 1.0 - initial_progress
     def schedule(progress_remaining: float) -> float:
-        return initial * 0.1 / (1.1 - progress_remaining)
+        return initial_learning_rate * 0.1 / (1.1 - progress_remaining * progress_remaining_at_start)
     return schedule
 
 
@@ -274,16 +278,20 @@ def train(
         env = supersuit.concat_vec_envs_v1(base_env, num_envs, num_cpus=num_envs, base_class="stable_baselines3")
         env = combine_truncation_and_termination_into_done_in_steps(env)
         env = VecMonitor(env)
+        remaining_timesteps = total_timesteps - recovery_callback.num_timesteps_across_restarts
+        learning_rate = make_logarithmic_learning_rate_schedule(
+            initial_learning_rate=initial_learning_rate,
+            initial_progress=recovery_callback.num_timesteps_across_restarts / total_timesteps,
+        )
         model = PPO(
             'MlpPolicy',
             env,
             verbose=1,
             tensorboard_log=tensorboard_log_dir,
-            learning_rate=make_logarithmic_learning_rate_schedule(initial_learning_rate),
+            learning_rate=learning_rate,
         )
         if model_load_path is not None:
             model.set_parameters(model_load_path, exact_match=True)
-        remaining_timesteps = total_timesteps - recovery_callback.num_timesteps_across_restarts
         stop_early = threading.Event()
         env_closed = threading.Event()
         resource_monitoring_thread = threading.Thread(
