@@ -247,13 +247,11 @@ def close_env_if_compute_resources_exhausted(
     poll_period: float = 60.0,
 ) -> None:
     import psutil
-    import time
-    while not stop_early.is_set():
+    while not stop_early.wait(poll_period):
         if psutil.virtual_memory().available < available_memory_threshold:
             env.close()
             did_close.set()
             break
-        time.sleep(poll_period)
 
 
 def train(
@@ -303,9 +301,10 @@ def train(
             model.learn(total_timesteps=remaining_timesteps, callback=recovery_callback)
             model.save(model_output_path)
         except (OSError, EOFError):
-            stop_early.set()
             recovery_callback.on_restart()
             model_load_path = recovery_callback.last_checkpoint_path()
+        finally:
+            stop_early.set()
             resource_monitoring_thread.join()
         if not env_closed.is_set():
             model.env.close()
