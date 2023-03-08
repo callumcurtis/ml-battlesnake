@@ -189,7 +189,7 @@ class RewardFoodConsumption(RewardFunction):
 
     def __init__(
         self,
-        reward_schedule: Callable[[int], float] = lambda health: 0.01 * (0.98 ** health),
+        reward_schedule: Callable[[int], float] = lambda health: 0.02 * (0.98 ** health),
     ):
         self.reward_schedule = reward_schedule
     
