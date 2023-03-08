@@ -153,10 +153,31 @@ class ObservationToFlattenedArray(ObservationTransformer):
         self,
         env_config: BattlesnakeEnvironmentConfiguration,
         egocentric: bool = True,
+        include_your_health: bool = True,
+        include_enemy_health: bool = True,
     ):
+        assert (
+            not (include_your_health or include_enemy_health)
+            or env_config.MAX_HEALTH <= np.iinfo(self.DTYPE).max
+        ), "Not a large enough dtype to encode health"
+        assert (
+            env_config.width * env_config.height < np.iinfo(self.DTYPE).max
+        ), "Not a large enough dtype to encode scalar coordinates for board"
+        assert (
+            not include_enemy_health
+            or env_config.width * env_config.height < np.iinfo(self.DTYPE).max - 1
+        ), "Not a large enough dtype to encode scalar coordinates for enemies, with one extra value for 'no enemy'"
+
         self._env_config = env_config
         self._egocentric = egocentric
-        self._shape = (self._env_config.width * self._env_config.height,)
+        self._include_your_health = include_your_health
+        self._include_enemy_health = include_enemy_health
+        size = env_config.width * env_config.height
+        if include_your_health:
+            size += 1
+        if include_enemy_health:
+            size += (len(env_config.possible_agents) - 1) * 2
+        self._shape = (size,)
         self._to_image = ObservationToImage(env_config, egocentric=False)
     
     @functools.cached_property
@@ -171,14 +192,31 @@ class ObservationToFlattenedArray(ObservationTransformer):
     def transform(self, observation):
         image = self._to_image.transform(observation)
         board = image.reshape(self._env_config.height, self._env_config.width)
+        coord_to_scalar = lambda coord: (abs(coord["y"]) * self._env_config.width) + abs(coord["x"])
         if self._egocentric:
             # shift the board so that your head is at the battlesnake api origin
             shift = (observation["you"]["head"]["y"], -observation["you"]["head"]["x"])
-            shift_scalar = (abs(shift[0]) * self._env_config.width) + abs(shift[1])
+            shift_scalar = coord_to_scalar(observation["you"]["head"])
             board = np.roll(board, shift, axis=(0, 1))
             # encode the shift in your head position as it is fixed for each observation
             board[-1, 0] = shift_scalar
-        return board.flatten()
+        flat_array = board.flatten()
+        health_info = []
+        if self._include_your_health:
+            health_info.append(observation["you"]["health"])
+        if self._include_enemy_health:
+            snake_dicts = observation["board"]["snakes"]
+            for snake_dict in snake_dicts:
+                if snake_dict["id"] == observation["you"]["id"]:
+                    continue
+                health_info.append(coord_to_scalar(snake_dict["head"]))
+                health_info.append(snake_dict["health"])
+            num_missing_snakes = len(self._env_config.possible_agents) - len(snake_dicts)
+            health_info.extend([np.iinfo(self.DTYPE).max, 0] * num_missing_snakes)
+        if health_info:
+            health_info = np.array(health_info, dtype=self.DTYPE)
+            flat_array = np.concatenate((flat_array, health_info))
+        return flat_array
 
     def empty_observation(self):
         return np.zeros(self.space.shape, dtype=self.DTYPE)

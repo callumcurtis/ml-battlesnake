@@ -7,6 +7,8 @@ class BattlesnakeEnvironmentConfiguration:
         "#FFFF00",
     ]
 
+    MAX_HEALTH = 100
+
     def __init__(
         self,
         possible_agents: list[str],
