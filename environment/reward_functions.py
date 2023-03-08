@@ -68,7 +68,7 @@ class RewardWinLoseDraw(RewardFunction):
         self,
         win_reward: float = 1.0,
         lose_reward: float = -1.0,
-        draw_reward: float = -1.0,
+        draw_reward: float = RewardFunction.NO_REWARD,
     ):
         self.win_reward = win_reward
         self.lose_reward = lose_reward
