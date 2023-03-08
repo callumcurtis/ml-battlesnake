@@ -110,6 +110,13 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
         timestep_builder = TimestepBuilder().with_actions(actions)
         timestep_builder = self.engine_adapter.step(timestep_builder)
 
+        timestep_builder.with_observations({
+            agent: self.observation_transformer.transform(obs)
+            if agent in self.agents
+            else self.observation_transformer.empty_observation()
+            for agent, obs in timestep_builder.raw_observations.items()
+        })
+
         timestep_builder.with_rewards(self.reward_function.calculate(self.memory_buffer, timestep_builder))
 
         if self.engine_adapter.is_game_over():
@@ -122,13 +129,6 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
             if not timestep_builder.terminations[agent]
             and not timestep_builder.truncations[agent]
         ]
-
-        timestep_builder.with_observations({
-            agent: self.observation_transformer.transform(obs)
-            if agent in self.agents
-            else self.observation_transformer.empty_observation()
-            for agent, obs in timestep_builder.raw_observations.items()
-        })
 
         timestep = timestep_builder.build()
 
