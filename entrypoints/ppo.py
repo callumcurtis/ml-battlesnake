@@ -7,6 +7,7 @@ sys.modules["gym"] = gymnasium
 import pathlib
 from typing import Optional
 import argparse
+import threading
 
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecMonitor
@@ -234,6 +235,23 @@ class CheckpointForRecoveryCallback(BaseCallback):
         self.num_timesteps_since_last_checkpoint = 0
 
 
+def close_env_if_compute_resources_exhausted(
+    env,
+    stop_early: threading.Event,
+    did_close: threading.Event,
+    available_memory_threshold: int = 2**31,
+    poll_period: float = 60.0,
+) -> None:
+    import psutil
+    import time
+    while not stop_early.is_set():
+        if psutil.virtual_memory().available < available_memory_threshold:
+            env.close()
+            did_close.set()
+            break
+        time.sleep(poll_period)
+
+
 def train(
     base_env,
     num_envs,
@@ -266,13 +284,23 @@ def train(
         if model_load_path is not None:
             model.set_parameters(model_load_path, exact_match=True)
         remaining_timesteps = total_timesteps - recovery_callback.num_timesteps_across_restarts
+        stop_early = threading.Event()
+        env_closed = threading.Event()
+        resource_monitoring_thread = threading.Thread(
+            target=close_env_if_compute_resources_exhausted,
+            args=(model.env, stop_early, env_closed),
+        )
+        resource_monitoring_thread.start()
         try:
             model.learn(total_timesteps=remaining_timesteps, callback=recovery_callback)
             model.save(model_output_path)
         except (OSError, EOFError):
+            stop_early.set()
             recovery_callback.on_restart()
             model_load_path = recovery_callback.last_checkpoint_path()
-        model.env.close()
+            resource_monitoring_thread.join()
+        if not env_closed.is_set():
+            model.env.close()
 
 
 def demo(
