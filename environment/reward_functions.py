@@ -28,8 +28,10 @@ class RewardChain(RewardFunction):
     def __init__(
         self,
         reward_functions: list[RewardFunction],
+        reducer: Callable[[float, float], float] = lambda x, y: max(min(x + y, 1.0), -1.0),
     ):
         self.reward_functions = reward_functions
+        self.reducer = reducer
     
     def calculate(
         self,
@@ -44,7 +46,10 @@ class RewardChain(RewardFunction):
                 this_timestep_builder=this_timestep_builder,
             )
             for snake_id, reward in rewards.items():
-                aggregate_rewards[snake_id] = aggregate_rewards.get(snake_id, self.NO_REWARD) + reward
+                aggregate_rewards[snake_id] = self.reducer(
+                    aggregate_rewards.get(snake_id, self.NO_REWARD),
+                    reward,
+                )
         return aggregate_rewards
     
     @property
