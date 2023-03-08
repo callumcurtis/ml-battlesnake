@@ -82,6 +82,7 @@ class Arguments:
         demo: bool,
         model_output_path: Optional[pathlib.Path],
         model_input_path: Optional[pathlib.Path],
+        gamma: float,
     ) -> None:
         self.num_agents = num_agents
         self.num_envs = num_envs
@@ -93,6 +94,7 @@ class Arguments:
         self.demo = demo
         self.model_output_path = model_output_path
         self.model_input_path = model_input_path
+        self.gamma = gamma
 
 
 class ArgumentParser:
@@ -119,6 +121,12 @@ class ArgumentParser:
             type=float,
             default=0.000003,
             help="Initial learning rate",
+        )
+        parser.add_argument(
+            "--gamma",
+            type=float,
+            default=0.977,
+            help="Discount factor",
         )
         parser.add_argument(
             "--total-timesteps",
@@ -177,6 +185,8 @@ class ArgumentParser:
             self._parser.error(f"Model input path {model_input_path} does not exist")
         if args.demo and not args.train and model_input_path.suffix != ".zip":
             self._parser.error(f"Model input path {model_input_path} must have .zip extension")
+        if not (0 <= args.gamma <= 1):
+            self._parser.error(f"Gamma must be between 0 and 1, received {args.gamma}")
         if args.train and args.tensorboard_log_dir is None:
             args.tensorboard_log_dir = model_output_path.parent
         return Arguments(
@@ -190,6 +200,7 @@ class ArgumentParser:
             demo=args.demo,
             model_output_path=model_output_path,
             model_input_path=model_input_path,
+            gamma=args.gamma,
         )
 
 
@@ -261,6 +272,7 @@ def train(
     model_output_path: pathlib.Path,
     tensorboard_log_dir: pathlib.Path,
     initial_learning_rate: float,
+    gamma: float,
     checkpoint_period: int,
     total_timesteps: int,
 ):
@@ -287,6 +299,7 @@ def train(
             verbose=1,
             tensorboard_log=tensorboard_log_dir,
             learning_rate=learning_rate,
+            gamma=gamma,
         )
         if model_load_path is not None:
             model.set_parameters(model_load_path, exact_match=True)
@@ -362,6 +375,7 @@ def main():
             model_output_path=args.model_output_path,
             tensorboard_log_dir=args.tensorboard_log_dir,
             initial_learning_rate=args.initial_learning_rate,
+            gamma=args.gamma,
             checkpoint_period=args.checkpoint_period,
             total_timesteps=args.total_timesteps,
         )
