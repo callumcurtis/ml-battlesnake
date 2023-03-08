@@ -316,13 +316,13 @@ def demo(
 ):
     model = PPO.load(model_file, env=None)
     obs = env.reset()
-    dones = [False, False]
-    while not all(dones):
+    while True:
         env.render()
         actions, _ = model.predict(obs)
         obs, rewards, terminations, truncations, info = env.step(actions)
+        print(f"Actions: {[Movement(a) for a in actions]}, rewards: {rewards}")
         if (terminations | truncations).all():
-            print(f"Episode finished after actions({list(Movement(action) for action in actions)}), and reward({rewards})")
+            print(f"Game over")
             break
     env.close()
 
