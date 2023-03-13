@@ -78,7 +78,7 @@ class Arguments:
         initial_learning_rate: float,
         total_timesteps: int,
         tensorboard_log_dir: pathlib.Path,
-        checkpoint_period: int,
+        checkpoint_period: Optional[int],
         train: bool,
         demo: bool,
         model_output_path: Optional[pathlib.Path],
@@ -143,8 +143,8 @@ class ArgumentParser:
         parser.add_argument(
             "--checkpoint-period",
             type=int,
-            default=1_000_000,
-            help="Number of timesteps between checkpoints",
+            default=-1,
+            help="Checkpoint the model during training every n timesteps, defaults to -1 (no checkpointing)",
         )
         parser.add_argument(
             "--train",
@@ -190,6 +190,10 @@ class ArgumentParser:
             self._parser.error(f"Gamma must be between 0 and 1, received {args.gamma}")
         if args.train and args.tensorboard_log_dir is None:
             args.tensorboard_log_dir = model_output_path.parent
+        if args.checkpoint_period < 1 and args.checkpoint_period != -1:
+            self._parser.error(f"Checkpoint period must be -1 (no checkpoints) or >= 1, received {args.checkpoint_period}")
+        if args.checkpoint_period == -1:
+            args.checkpoint_period = None
         return Arguments(
             num_agents=args.num_agents,
             num_envs=args.num_envs,
@@ -205,11 +209,11 @@ class ArgumentParser:
         )
 
 
-class CheckpointForRecoveryCallback(BaseCallback):
+class CheckpointCallback(BaseCallback):
 
     def __init__(
         self,
-        save_period: int,
+        save_period: Optional[int],
         save_path: pathlib.Path,
         name_prefix: str,
         verbose: int = 0,
@@ -240,7 +244,7 @@ class CheckpointForRecoveryCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         self.num_timesteps_since_last_checkpoint += self.model.n_envs
-        if self.num_timesteps_since_last_checkpoint >= self._save_period:
+        if self._save_period and self.num_timesteps_since_last_checkpoint >= self._save_period:
             next_checkpoint_timesteps = self.num_timesteps_across_restarts
             self.model.save(self._checkpoint_path(next_checkpoint_timesteps))
             self.num_checkpointed_timesteps = next_checkpoint_timesteps
@@ -277,10 +281,10 @@ def train(
     tensorboard_log_dir: pathlib.Path,
     initial_learning_rate: float,
     gamma: float,
-    checkpoint_period: int,
+    checkpoint_period: Optional[int],
     total_timesteps: int,
 ):
-    recovery_callback = CheckpointForRecoveryCallback(
+    checkpoint_callback = CheckpointCallback(
         save_period=checkpoint_period,
         save_path=pathlib.Path(model_output_path).parent,
         name_prefix=model_output_path.stem,
@@ -288,7 +292,7 @@ def train(
 
     model_load_path = model_input_path    
 
-    remaining_timesteps = lambda: total_timesteps - recovery_callback.num_timesteps_across_restarts
+    remaining_timesteps = lambda: total_timesteps - checkpoint_callback.num_timesteps_across_restarts
 
     while remaining_timesteps():
         env = supersuit.concat_vec_envs_v1(base_env, num_envs, num_cpus=num_envs, base_class="stable_baselines3")
@@ -296,7 +300,7 @@ def train(
         env = VecMonitor(env)
         learning_rate = make_logarithmic_learning_rate_schedule(
             initial_learning_rate=initial_learning_rate,
-            initial_progress=recovery_callback.num_timesteps_across_restarts / total_timesteps,
+            initial_progress=checkpoint_callback.num_timesteps_across_restarts / total_timesteps,
         )
         resource_monitor_callback = StopTrainingOnComputeResourceThreshold()
         model = PPO(
@@ -311,13 +315,13 @@ def train(
         if model_load_path is not None:
             model.set_parameters(model_load_path, exact_match=True)
         try:
-            model.learn(total_timesteps=remaining_timesteps(), callback=[recovery_callback, resource_monitor_callback])
+            model.learn(total_timesteps=remaining_timesteps(), callback=[checkpoint_callback, resource_monitor_callback])
             model.save(model_output_path)
         except (OSError, EOFError):
             pass
         if remaining_timesteps():
-            recovery_callback.on_restart()
-            model_load_path = recovery_callback.last_checkpoint_path()
+            checkpoint_callback.on_restart()
+            model_load_path = checkpoint_callback.last_checkpoint_path()
         model.env.close()
 
 
