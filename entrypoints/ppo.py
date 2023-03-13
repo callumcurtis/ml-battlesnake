@@ -306,6 +306,7 @@ def train(
             tensorboard_log=tensorboard_log_dir,
             learning_rate=learning_rate,
             gamma=gamma,
+            policy_kwargs={"net_arch": {"pi": [90, 90], "vf": [90, 90]}}
         )
         if model_load_path is not None:
             model.set_parameters(model_load_path, exact_match=True)
