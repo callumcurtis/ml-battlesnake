@@ -5,15 +5,16 @@ sys.path.append("")
 sys.modules["gym"] = gymnasium
 
 import pathlib
-from typing import Optional, Callable
+from typing import Optional
 import argparse
-import threading
 
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecMonitor
 from stable_baselines3.common.callbacks import BaseCallback
 import supersuit
 import numpy as np
+import psutil
+
 
 from common import paths
 from environment import (
@@ -250,19 +251,22 @@ class CheckpointForRecoveryCallback(BaseCallback):
         self.num_timesteps_since_last_checkpoint = 0
 
 
-def close_env_if_compute_resources_exhausted(
-    env,
-    stop_early: threading.Event,
-    did_close: threading.Event,
-    available_memory_threshold: int = 2**31,
-    poll_period: float = 60.0,
-) -> None:
-    import psutil
-    while not stop_early.wait(poll_period):
-        if psutil.virtual_memory().available < available_memory_threshold:
-            env.close()
-            did_close.set()
-            break
+class StopTrainingOnComputeResourceThreshold(BaseCallback):
+
+    def __init__(
+        self,
+        available_memory_threshold: int = 2**31,
+        verbose: int = 0,
+    ):
+        super().__init__(verbose)
+        self._available_memory_threshold = available_memory_threshold
+        self.did_stop = False
+    
+    def _on_step(self) -> bool:
+        stop = psutil.virtual_memory().available < self._available_memory_threshold
+        if stop:
+            self.did_stop = True
+        return not stop
 
 
 def train(
@@ -284,15 +288,17 @@ def train(
 
     model_load_path = model_input_path    
 
-    while recovery_callback.num_timesteps_across_restarts < total_timesteps:
+    remaining_timesteps = lambda: total_timesteps - recovery_callback.num_timesteps_across_restarts
+
+    while remaining_timesteps():
         env = supersuit.concat_vec_envs_v1(base_env, num_envs, num_cpus=num_envs, base_class="stable_baselines3")
         env = combine_truncation_and_termination_into_done_in_steps(env)
         env = VecMonitor(env)
-        remaining_timesteps = total_timesteps - recovery_callback.num_timesteps_across_restarts
         learning_rate = make_logarithmic_learning_rate_schedule(
             initial_learning_rate=initial_learning_rate,
             initial_progress=recovery_callback.num_timesteps_across_restarts / total_timesteps,
         )
+        resource_monitor_callback = StopTrainingOnComputeResourceThreshold()
         model = PPO(
             'MlpPolicy',
             env,
@@ -303,24 +309,15 @@ def train(
         )
         if model_load_path is not None:
             model.set_parameters(model_load_path, exact_match=True)
-        stop_early = threading.Event()
-        env_closed = threading.Event()
-        resource_monitoring_thread = threading.Thread(
-            target=close_env_if_compute_resources_exhausted,
-            args=(model.env, stop_early, env_closed),
-        )
-        resource_monitoring_thread.start()
         try:
-            model.learn(total_timesteps=remaining_timesteps, callback=recovery_callback)
+            model.learn(total_timesteps=remaining_timesteps(), callback=[recovery_callback, resource_monitor_callback])
             model.save(model_output_path)
         except (OSError, EOFError):
+            pass
+        if remaining_timesteps():
             recovery_callback.on_restart()
             model_load_path = recovery_callback.last_checkpoint_path()
-        finally:
-            stop_early.set()
-            resource_monitoring_thread.join()
-        if not env_closed.is_set():
-            model.env.close()
+        model.env.close()
 
 
 def demo(
