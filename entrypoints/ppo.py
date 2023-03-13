@@ -321,7 +321,7 @@ def train(
             pass
         if remaining_timesteps():
             checkpoint_callback.on_restart()
-            model_load_path = checkpoint_callback.last_checkpoint_path()
+            model_load_path = cp if (cp := checkpoint_callback.last_checkpoint_path()) else model_input_path
         model.env.close()
 
 
