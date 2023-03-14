@@ -1,8 +1,8 @@
 import abc
 import copy
 
-from environment.engines import BattlesnakeEngine, BattlesnakeDllEngine, Movement
-from environment.types import InitialStateBuilder, TimestepBuilder
+from environment.engines import BattlesnakeEngine, BattlesnakeDllEngine
+from environment.types import Movement, InitialStateBuilder, TimestepBuilder
 
 
 class BattlesnakeEngineForParallelEnv(abc.ABC):

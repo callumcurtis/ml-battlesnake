@@ -1,15 +1,9 @@
 import ctypes
 import json
 import pathlib
-import enum
 import abc
 
-
-class Movement(enum.IntEnum):
-    UP = 0
-    DOWN = enum.auto()
-    LEFT = enum.auto()
-    RIGHT = enum.auto()
+from environment.types import Movement
 
 
 class BattlesnakeEngine(abc.ABC):

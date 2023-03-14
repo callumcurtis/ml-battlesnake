@@ -1,3 +1,6 @@
+import enum
+
+
 class BattlesnakeEnvironmentConfiguration:
 
     DEFAULT_COLORS = [
@@ -28,6 +31,13 @@ class BattlesnakeEnvironmentConfiguration:
         self.game_map = game_map
         self.game_type = game_type
         self.seed = seed
+
+
+class Movement(enum.IntEnum):
+    UP = 0
+    DOWN = enum.auto()
+    LEFT = enum.auto()
+    RIGHT = enum.auto()
 
 
 class InitialState:
