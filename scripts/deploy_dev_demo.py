@@ -1,5 +1,6 @@
 import argparse
 import logging
+import sys
 
 from ml_battlesnake.deployment import model
 from ml_battlesnake.common import paths
@@ -56,13 +57,13 @@ def main():
 
 
     snake_program = model.Program(
-        name="untimely-neglected-wearable",
-        entrypoint=["python", "server.py"],
-        cwd=paths.SNAKES_DIR/"untimely-neglected-wearable",
+        name="official-starter-snake",
+        entrypoint=["python", "main.py"],
+        cwd=paths.SNAKES_DIR/"official-starter-snake",
     )
 
-    service0 = model.Service(
-        name="untimely-neglected-wearable-0",
+    snake_service_0 = model.Service(
+        name="official-starter-snake-0",
         program=snake_program,
         env={"PORT": "5274"},
         routes=[
@@ -73,8 +74,8 @@ def main():
         ],
     )
 
-    service1 = model.Service(
-        name="untimely-neglected-wearable-1",
+    snake_service_1 = model.Service(
+        name="official-starter-snake-1",
         program=snake_program,
         env={"PORT": "6830"},
         routes=[
@@ -91,7 +92,7 @@ def main():
         cwd=paths.BROWSER_SPECTATOR_DIR,
     )
 
-    service2 = model.Service(
+    browser_spectator_service = model.Service(
         name="browser-spectator-0",
         program=browser_spectator_program,
         env={"HOST": "127.0.0.1", "PORT": "9000"},
@@ -110,12 +111,12 @@ def main():
     )
 
     snake_args = []
-    for service in [service0, service1]:
+    for service in [snake_service_0, snake_service_1]:
         for route in service.routes:
             if isinstance(route, model.Snake):
                 snake_args.extend(["--name", route.name, "--url", route.baseroute])
 
-    service3 = model.Service(
+    engine_service = model.Service(
         name="engine-0",
         program=engine_program,
         args=["--browser", "--board-url", "http://localhost:9000", *snake_args],
@@ -128,13 +129,17 @@ def main():
     )
 
     import time
-    service0.start()
-    service1.start()
-    service2.start()
+    snake_service_0.start()
+    snake_service_1.start()
+    browser_spectator_service.start()
 
+    # Must wait for snakes to start
+    # TODO: use a wait-for-it script
     time.sleep(5)
-    service3.start()
+    engine_service.start(stderr=sys.stdout)
 
+    # Wait for the game to finish
+    # TODO: use a wait-for-it script
     time.sleep(100)
 
 

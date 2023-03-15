@@ -140,15 +140,15 @@ class Service:
     def routes(self):
         return self._routes
 
-    def start(self) -> None:
+    def start(self, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) -> None:
         assert self._popen is None
         logger.debug(f"Starting {self}")
         self._popen = subprocess.Popen(
             self.program.entrypoint + self._args,
             cwd=self.program.cwd,
             env={**os.environ, **self._env},
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=stdout,
+            stderr=stderr,
         )
     
     def stop(self) -> None:

@@ -1,9 +1,9 @@
 [submodule "rules"]
 	path = ml_battlesnake/deployment/game-engine-as-executable
 	url = https://github.com/BattlesnakeOfficial/rules.git
-[submodule "snakes/untimely-neglected-wearable"]
-	path = ml_battlesnake/deployment/snakes/untimely-neglected-wearable
-	url = https://github.com/altersaddle/untimely-neglected-wearable.git
 [submodule "board"]
 	path = ml_battlesnake/deployment/browser-spectator
 	url = https://github.com/BattlesnakeOfficial/board.git
+[submodule "ml_battlesnake/deployment/snakes/official-starter-snake"]
+	path = ml_battlesnake/deployment/snakes/official-starter-snake
+	url = https://github.com/BattlesnakeOfficial/starter-snake-python.git
