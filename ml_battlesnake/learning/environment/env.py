@@ -4,11 +4,11 @@ import pettingzoo
 import gymnasium
 import supersuit
 
-from environment.types import BattlesnakeEnvironmentConfiguration, InitialStateBuilder, TimestepBuilder
-from environment.adapters import BattlesnakeEngineForParallelEnv, Movement
-from environment.observation_transformers import ObservationTransformer
-from environment.reward_functions import RewardFunction
-from environment.memory import MemoryBuffer
+from .types import BattlesnakeEnvironmentConfiguration, InitialStateBuilder, TimestepBuilder
+from .adapters import BattlesnakeEngineForParallelEnv, Movement
+from .observation_transformers import ObservationTransformer
+from .reward_functions import RewardFunction
+from .memory import MemoryBuffer
 
 
 def make_parallel_pettingzoo_env(

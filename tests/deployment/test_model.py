@@ -2,7 +2,7 @@ import pathlib
 
 import pytest
 
-from common import model
+from ml_battlesnake.deployment import model
 
 
 @pytest.fixture

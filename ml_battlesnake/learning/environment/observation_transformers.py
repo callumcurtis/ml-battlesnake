@@ -4,7 +4,7 @@ import functools
 import numpy as np
 import gymnasium
 
-from environment.types import BattlesnakeEnvironmentConfiguration, Observation, SnakeObservation
+from .types import BattlesnakeEnvironmentConfiguration, Observation, SnakeObservation
 
 
 class ObservationTransformer(abc.ABC):

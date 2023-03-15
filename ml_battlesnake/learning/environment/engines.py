@@ -3,7 +3,7 @@ import json
 import pathlib
 import abc
 
-from environment.types import Movement
+from .types import Movement
 
 
 class BattlesnakeEngine(abc.ABC):

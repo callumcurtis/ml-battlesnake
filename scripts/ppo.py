@@ -16,8 +16,8 @@ import numpy as np
 import psutil
 
 
-from common import paths
-from environment import (
+from ml_battlesnake.common import paths
+from ml_battlesnake.learning.environment import (
     make_gymnasium_vec_env,
     BattlesnakeDllEngine,
     adapt_engine_for_parallel_env,
@@ -349,7 +349,7 @@ def main():
     game_type = "solo" if args.num_agents == 1 else "standard"
     configuration = BattlesnakeEnvironmentConfiguration(possible_agents=agents, game_type=game_type)
     observation_transformer = ObservationToFlattenedArray(configuration)
-    engine = BattlesnakeDllEngine(paths.BIN_DIR / "rules.dll")
+    engine = BattlesnakeDllEngine(paths.BIN_DIR / "engine.dll")
     engine_adapter = adapt_engine_for_parallel_env(engine)
     reward_function = RewardChain(
         [

@@ -1,8 +1,8 @@
 import argparse
 import logging
 
-from common import model
-from common import paths
+from ml_battlesnake.deployment import model
+from ml_battlesnake.common import paths
 
 
 logger = logging.getLogger(__name__)

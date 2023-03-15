@@ -1,8 +1,8 @@
 import abc
 from typing import Callable
 
-from environment.memory import MemoryBuffer
-from environment.types import TimestepBuilder
+from .memory import MemoryBuffer
+from .types import TimestepBuilder
 
 
 class RewardFunction(abc.ABC):

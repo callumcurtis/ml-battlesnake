@@ -2,7 +2,7 @@ import collections
 import collections.abc
 from typing import Union, Iterator
 
-from environment.types import InitialState, Timestep
+from .types import InitialState, Timestep
 
 
 class MemoryBuffer(collections.abc.Sequence):
