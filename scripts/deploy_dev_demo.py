@@ -136,6 +136,8 @@ def main():
     # Must wait for snakes to start
     # TODO: use a wait-for-it script
     time.sleep(5)
+
+    # TODO: support logging in parallel across services
     engine_service.start(stderr=sys.stdout)
 
     # Wait for the game to finish
