@@ -46,12 +46,10 @@ class InitialState:
         self,
         configuration,
         raw_observations,
-        observations,
         infos = None,
     ):
         self.configuration = configuration
         self.raw_observations = raw_observations
-        self.observations = observations
         self.infos = infos
 
 
@@ -60,7 +58,6 @@ class InitialStateBuilder:
     def __init__(self):
         self.configuration = None
         self.raw_observations = {}
-        self.observations = {}
         self.infos = {}
     
     def with_configuration(self, configuration) -> 'InitialStateBuilder':
@@ -71,20 +68,15 @@ class InitialStateBuilder:
         self.raw_observations = raw_observations
         return self
 
-    def with_observations(self, observations) -> 'InitialStateBuilder':
-        self.observations = observations
-        return self
-
     def with_infos(self, infos) -> 'InitialStateBuilder':
         self.infos = infos
         return self
 
     def build(self) -> InitialState:
-        assert (self.raw_observations.keys() == self.observations.keys() == self.infos.keys()) and self.configuration
+        assert (self.raw_observations.keys() == self.infos.keys()) and self.configuration
         return InitialState(
             configuration=self.configuration,
             raw_observations=self.raw_observations,
-            observations=self.observations,
             infos=self.infos,
         )
 
@@ -95,7 +87,6 @@ class Timestep:
         self,
         actions,
         raw_observations,
-        observations,
         rewards,
         terminations,
         truncations,
@@ -103,7 +94,6 @@ class Timestep:
     ):
         self.actions = actions
         self.raw_observations = raw_observations
-        self.observations = observations
         self.rewards = rewards
         self.terminations = terminations
         self.truncations = truncations
@@ -115,7 +105,6 @@ class TimestepBuilder:
     def __init__(self):
         self.actions = {}
         self.raw_observations = {}
-        self.observations = {}
         self.rewards = {}
         self.terminations = {}
         self.truncations = {}
@@ -127,10 +116,6 @@ class TimestepBuilder:
 
     def with_raw_observations(self, raw_observations) -> 'TimestepBuilder':
         self.raw_observations = raw_observations
-        return self
-
-    def with_observations(self, observations) -> 'TimestepBuilder':
-        self.observations = observations
         return self
 
     def with_rewards(self, rewards) -> 'TimestepBuilder':
@@ -153,7 +138,6 @@ class TimestepBuilder:
         assert (
             self.actions.keys()
             == self.raw_observations.keys()
-            == self.observations.keys()
             == self.rewards.keys()
             == self.terminations.keys()
             == self.truncations.keys()
@@ -162,7 +146,6 @@ class TimestepBuilder:
         return Timestep(
             actions=self.actions,
             raw_observations=self.raw_observations,
-            observations=self.observations,
             rewards=self.rewards,
             terminations=self.terminations,
             truncations=self.truncations,

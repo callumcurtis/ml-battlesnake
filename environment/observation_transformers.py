@@ -13,6 +13,10 @@ class ObservationTransformer(abc.ABC):
     def transform(self, observation):
         pass
 
+    @abc.abstractmethod
+    def transform_all(self, observations):
+        pass
+
     @property
     @abc.abstractmethod
     def space(self):
@@ -23,7 +27,16 @@ class ObservationTransformer(abc.ABC):
         pass
 
 
-class ObservationToImage(ObservationTransformer):
+class TransformAllMixin:
+
+    def transform_all(self, observations):
+        return {
+            agent: self.transform(obs)
+            for agent, obs in observations.items()
+        }
+
+
+class ObservationToImage(TransformAllMixin, ObservationTransformer):
 
     DTYPE = np.uint8
     NUM_CHANNELS = 1
@@ -145,7 +158,7 @@ class ObservationToImage(ObservationTransformer):
         return np.zeros(self.space.shape, dtype=self.DTYPE)
 
 
-class ObservationToFlattenedArray(ObservationTransformer):
+class ObservationToFlattenedArray(TransformAllMixin, ObservationTransformer):
 
     DTYPE = np.uint8
 

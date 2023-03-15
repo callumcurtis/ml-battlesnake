@@ -90,32 +90,21 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
         initial_state_builder = InitialStateBuilder().with_configuration(self.configuration)
 
         initial_state_builder = self.engine_adapter.reset(initial_state_builder)
-
-        initial_state_builder.with_observations({
-            agent: self.observation_transformer.transform(obs)
-            for agent, obs in initial_state_builder.raw_observations.items()
-        })
         
         initial_state = initial_state_builder.build()
 
         self.memory_buffer.reset(initial_state)
 
+        transformed_observations = self.observation_transformer.transform_all(initial_state.raw_observations)
         return (
-            (initial_state.observations, initial_state.infos)
+            (transformed_observations, initial_state.infos)
             if return_info
-            else initial_state.observations
+            else transformed_observations
         )
     
     def step(self, actions):
         timestep_builder = TimestepBuilder().with_actions(actions)
         timestep_builder = self.engine_adapter.step(timestep_builder)
-
-        timestep_builder.with_observations({
-            agent: self.observation_transformer.transform(obs)
-            if agent in self.agents
-            else self.observation_transformer.empty_observation()
-            for agent, obs in timestep_builder.raw_observations.items()
-        })
 
         timestep_builder.with_rewards(self.reward_function.calculate(self.memory_buffer, timestep_builder))
 
@@ -134,8 +123,9 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
 
         self.memory_buffer.add(timestep)
 
+        transformed_observations = self.observation_transformer.transform_all(timestep.raw_observations)
         return (
-            timestep.observations,
+            transformed_observations,
             timestep.rewards,
             timestep.terminations,
             timestep.truncations,
