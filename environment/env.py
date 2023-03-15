@@ -95,7 +95,7 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
 
         self.memory_buffer.reset(initial_state)
 
-        transformed_observations = self.observation_transformer.transform_all(initial_state.raw_observations)
+        transformed_observations = self.observation_transformer.transform_all(initial_state.observations)
         return (
             (transformed_observations, initial_state.infos)
             if return_info
@@ -123,7 +123,7 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
 
         self.memory_buffer.add(timestep)
 
-        transformed_observations = self.observation_transformer.transform_all(timestep.raw_observations)
+        transformed_observations = self.observation_transformer.transform_all(timestep.observations)
         return (
             transformed_observations,
             timestep.rewards,

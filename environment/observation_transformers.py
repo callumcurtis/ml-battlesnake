@@ -4,17 +4,17 @@ import functools
 import numpy as np
 import gymnasium
 
-from environment.types import BattlesnakeEnvironmentConfiguration
+from environment.types import BattlesnakeEnvironmentConfiguration, Observation, SnakeObservation
 
 
 class ObservationTransformer(abc.ABC):
 
     @abc.abstractmethod
-    def transform(self, observation):
+    def transform(self, observation: Observation):
         pass
 
     @abc.abstractmethod
-    def transform_all(self, observations):
+    def transform_all(self, observations: dict[str, Observation]):
         pass
 
     @property
@@ -29,7 +29,7 @@ class ObservationTransformer(abc.ABC):
 
 class TransformAllMixin:
 
-    def transform_all(self, observations):
+    def transform_all(self, observations: dict[str, Observation]):
         return {
             agent: self.transform(obs)
             for agent, obs in observations.items()
@@ -63,7 +63,7 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
             dtype=self.DTYPE,
         )
 
-    def transform(self, observation):
+    def transform(self, observation: Observation):
         """
         Transforms the observation into an image.
 
@@ -96,15 +96,15 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
         encoding_by_element = {element: self.space.low.item(0) + (i * encoded_value_spacing) for i, element in enumerate(elements)}
 
         coords_by_element = {
-            "food": tuple((food["x"], food["y"]) for food in observation["board"]["food"]),
+            "food": tuple((food.x, food.y) for food in observation.food),
         }
 
-        def get_coords_by_direction_to_next_snake_part(snake_dicts):
+        def get_coords_by_direction_to_next_snake_part(snakes: list[SnakeObservation]):
             coords_by_direction_to_next_snake_part = {d: [] for d in possible_directions_to_next_snake_part}
-            for snake_dict in snake_dicts:
-                for snake_part_coord, next_snake_part_coord in zip(snake_dict["body"][1:], snake_dict["body"]):
-                    snake_part_coord = (snake_part_coord["x"], snake_part_coord["y"])
-                    next_snake_part_coord = (next_snake_part_coord["x"], next_snake_part_coord["y"])
+            for snake in snakes:
+                for snake_part_coord, next_snake_part_coord in zip(snake.body[1:], snake.body):
+                    snake_part_coord = (snake_part_coord.x, snake_part_coord.y)
+                    next_snake_part_coord = (next_snake_part_coord.x, next_snake_part_coord.y)
                     coord_delta = (
                         next_snake_part_coord[0] - snake_part_coord[0],
                         next_snake_part_coord[1] - snake_part_coord[1],
@@ -124,13 +124,12 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
                     coords_by_direction_to_next_snake_part[direction_to_next_snake_part].append(snake_part_coord)
             return coords_by_direction_to_next_snake_part
 
-        for direction_to_next_snake_part, coords in get_coords_by_direction_to_next_snake_part(observation["board"]["snakes"]).items():
+        for direction_to_next_snake_part, coords in get_coords_by_direction_to_next_snake_part(observation.snakes).items():
             coords_by_element[direction_to_next_snake_part] = tuple(coords)
 
-        your_id = observation["you"]["id"]
-        for snake_dict in observation["board"]["snakes"]:
-            snake_pronoun = "your" if snake_dict["id"] == your_id else "enemy"
-            coords_by_element[f"{snake_pronoun}_head"] = ((snake_dict["head"]["x"], snake_dict["head"]["y"]),)
+        for snake in observation.snakes:
+            snake_pronoun = "your" if snake.id == observation.you.id else "enemy"
+            coords_by_element[f"{snake_pronoun}_head"] = ((snake.head.x, snake.head.y),)
 
         board_array = np.zeros(self._board_shape, dtype=self.DTYPE)
         assert board_array.shape[0] == 1, "Only one channel is currently supported"
@@ -141,9 +140,9 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
         if self._egocentric:
             # place the board array within a larger array representing the egocentric view
             view_array = np.full(self._view_shape, encoding_by_element["wall"], dtype=self.DTYPE)
-            x0 = self._view_shape[1] - self._board_shape[1] - observation["you"]["head"]["x"]
+            x0 = self._view_shape[1] - self._board_shape[1] - observation.you.head.x
             x1 = x0 + self._board_shape[1]
-            y0 = self._view_shape[2] - self._board_shape[2] - observation["you"]["head"]["y"]
+            y0 = self._view_shape[2] - self._board_shape[2] - observation.you.head.y
             y1 = y0 + self._board_shape[2]
             view_array[0][x0:x1, y0:y1] = board_array[0]
         else:
@@ -202,31 +201,31 @@ class ObservationToFlattenedArray(TransformAllMixin, ObservationTransformer):
             dtype=self.DTYPE,
         )
     
-    def transform(self, observation):
+    def transform(self, observation: Observation):
         image = self._to_image.transform(observation)
         board = image.reshape(self._env_config.height, self._env_config.width)
-        coord_to_scalar = lambda coord: (abs(coord["y"]) * self._env_config.width) + abs(coord["x"])
+        coord_to_scalar = lambda coord: (abs(coord.y) * self._env_config.width) + abs(coord.x)
         if self._egocentric:
             # shift the board so that your head is at the battlesnake api origin
-            shift = (observation["you"]["head"]["y"], -observation["you"]["head"]["x"])
-            shift_scalar = coord_to_scalar(observation["you"]["head"])
+            shift = (observation.you.head.y, -observation.you.head.x)
+            shift_scalar = coord_to_scalar(observation.you.head)
             board = np.roll(board, shift, axis=(0, 1))
             # encode the shift in your head position as it is fixed for each observation
             board[-1, 0] = shift_scalar
         flat_array = board.flatten()
         health_info = []
         if self._include_your_health:
-            health_info.append(observation["you"]["health"])
+            health_info.append(observation.you.health)
         if self._include_enemy_health:
-            enemy_snake_dicts = [
-                snake_dict
-                for snake_dict in observation["board"]["snakes"]
-                if snake_dict["id"] != observation["you"]["id"]
+            enemy_snakes = [
+                snake
+                for snake in observation.snakes
+                if snake.id != observation.you.id
             ]
-            for snake_dict in enemy_snake_dicts:
-                health_info.append(coord_to_scalar(snake_dict["head"]))
-                health_info.append(snake_dict["health"])
-            num_missing_enemy_snakes = len(self._env_config.possible_agents) - len(enemy_snake_dicts) - 1
+            for enemy_snake in enemy_snakes:
+                health_info.append(coord_to_scalar(enemy_snake.head))
+                health_info.append(enemy_snake.health)
+            num_missing_enemy_snakes = len(self._env_config.possible_agents) - len(enemy_snakes) - 1
             health_info.extend([np.iinfo(self.DTYPE).max, 0] * num_missing_enemy_snakes)
         if health_info:
             health_info = np.array(health_info, dtype=self.DTYPE)

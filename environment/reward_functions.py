@@ -147,7 +147,7 @@ class RewardOpponentDeath(RewardFunction):
         this_timestep_builder: TimestepBuilder,
     ) -> dict[str, float]:
         assert this_timestep_builder.terminations
-        assert this_timestep_builder.raw_observations
+        assert this_timestep_builder.observations
 
         snakes = list(this_timestep_builder.terminations.keys())
         dead_snakes = [snake for snake in snakes if this_timestep_builder.terminations[snake]]
@@ -157,12 +157,12 @@ class RewardOpponentDeath(RewardFunction):
             return {snake: self.NO_REWARD for snake in snakes}
     
         head_position_by_snake = {
-            snake: observation["you"]["head"]
-            for snake, observation in this_timestep_builder.raw_observations.items()
+            snake: observation.you.head
+            for snake, observation in this_timestep_builder.observations.items()
         }
         body_positions_by_snake = {
-            snake: observation["you"]["body"]
-            for snake, observation in this_timestep_builder.raw_observations.items()
+            snake: observation.you.body
+            for snake, observation in this_timestep_builder.observations.items()
         }
 
         rewards = {snake: self.NO_REWARD if snake in dead_snakes else self.outlive_reward for snake in snakes}
@@ -198,18 +198,18 @@ class RewardFoodConsumption(RewardFunction):
         memory_buffer: MemoryBuffer,
         this_timestep_builder: TimestepBuilder,
     ) -> dict[str, float]:
-        assert this_timestep_builder.raw_observations
+        assert this_timestep_builder.observations
         assert len(memory_buffer) >= self.required_memory_size
 
-        previous_raw_observations = memory_buffer[-1].raw_observations
-        current_raw_observations = this_timestep_builder.raw_observations
-        current_snakes = set(current_raw_observations.keys())
+        previous_observations = memory_buffer[-1].observations
+        current_observations = this_timestep_builder.observations
+        current_snakes = set(current_observations.keys())
         previous_health_by_snake = {
-            snake: previous_raw_observations[snake]["you"]["health"]
+            snake: previous_observations[snake].you.health
             for snake in current_snakes
         }
         current_health_by_snake = {
-            snake: current_raw_observations[snake]["you"]["health"]
+            snake: current_observations[snake].you.health
             for snake in current_snakes
         }
 
