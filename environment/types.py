@@ -1,4 +1,5 @@
 import enum
+from typing import Union
 
 
 class BattlesnakeEnvironmentConfiguration:
@@ -139,12 +140,10 @@ class InitialState:
     def __init__(
         self,
         configuration,
-        raw_observations,
         observations,
         infos = None,
     ):
         self.configuration = configuration
-        self.raw_observations = raw_observations
         self.observations = observations
         self.infos = infos
 
@@ -153,7 +152,6 @@ class InitialStateBuilder:
 
     def __init__(self):
         self.configuration = None
-        self.raw_observations = {}
         self.observations = {}
         self.infos = {}
     
@@ -161,12 +159,13 @@ class InitialStateBuilder:
         self.configuration = configuration
         return self
 
-    def with_raw_observations(self, raw_observations) -> 'InitialStateBuilder':
-        self.raw_observations = raw_observations
-        self.observations = {
-            agent: Observation.from_raw_observation(raw_observation)
-            for agent, raw_observation in self.raw_observations.items()
-        }
+    def with_observations(self, observations: Union[dict, Observation]) -> 'InitialStateBuilder':
+        if isinstance(observations, dict):
+            observations = {
+                agent: Observation.from_raw_observation(raw_observation)
+                for agent, raw_observation in observations.items()
+            }
+        self.observations = observations
         return self
 
     def with_infos(self, infos) -> 'InitialStateBuilder':
@@ -174,15 +173,9 @@ class InitialStateBuilder:
         return self
 
     def build(self) -> InitialState:
-        assert (
-            (
-                self.raw_observations.keys()
-                == self.observations.keys()
-                == self.infos.keys()
-            ) and self.configuration)
+        assert (self.observations.keys() == self.infos.keys()) and self.configuration
         return InitialState(
             configuration=self.configuration,
-            raw_observations=self.raw_observations,
             observations=self.observations,
             infos=self.infos,
         )
@@ -193,7 +186,6 @@ class Timestep:
     def __init__(
         self,
         actions,
-        raw_observations,
         observations,
         rewards,
         terminations,
@@ -201,7 +193,6 @@ class Timestep:
         infos,
     ):
         self.actions = actions
-        self.raw_observations = raw_observations
         self.observations = observations
         self.rewards = rewards
         self.terminations = terminations
@@ -213,7 +204,6 @@ class TimestepBuilder:
 
     def __init__(self):
         self.actions = {}
-        self.raw_observations = {}
         self.observations = {}
         self.rewards = {}
         self.terminations = {}
@@ -224,12 +214,13 @@ class TimestepBuilder:
         self.actions = actions
         return self
 
-    def with_raw_observations(self, raw_observations) -> 'TimestepBuilder':
-        self.raw_observations = raw_observations
-        self.observations = {
-            agent: Observation.from_raw_observation(raw_observation)
-            for agent, raw_observation in self.raw_observations.items()
-        }
+    def with_observations(self, observations: Union[dict, Observation]) -> 'TimestepBuilder':
+        if isinstance(observations, dict):
+            observations = {
+                agent: Observation.from_raw_observation(raw_observation)
+                for agent, raw_observation in observations.items()
+            }
+        self.observations = observations
         return self
 
     def with_rewards(self, rewards) -> 'TimestepBuilder':
@@ -251,7 +242,6 @@ class TimestepBuilder:
     def build(self) -> Timestep:
         assert (
             self.actions.keys()
-            == self.raw_observations.keys()
             == self.observations.keys()
             == self.rewards.keys()
             == self.terminations.keys()
@@ -260,7 +250,6 @@ class TimestepBuilder:
         )
         return Timestep(
             actions=self.actions,
-            raw_observations=self.raw_observations,
             observations=self.observations,
             rewards=self.rewards,
             terminations=self.terminations,
