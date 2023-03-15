@@ -67,7 +67,7 @@ def main():
         program=snake_program,
         env={"PORT": "5274"},
         routes=[
-            model.Snake(
+            model.SnakeRoute(
                 name="rattley",
                 baseroute="http://localhost:5274",
             ),
@@ -79,7 +79,7 @@ def main():
         program=snake_program,
         env={"PORT": "6830"},
         routes=[
-            model.Snake(
+            model.SnakeRoute(
                 name="anacondie",
                 baseroute="http://localhost:6830",
             ),
@@ -97,7 +97,7 @@ def main():
         program=browser_spectator_program,
         env={"HOST": "127.0.0.1", "PORT": "9000"},
         routes=[
-            model.BrowserSpectator(
+            model.BrowserSpectatorRoute(
                 name="main-browser-spectator",
                 baseroute="http://localhost:9000",
             ),
@@ -113,7 +113,7 @@ def main():
     snake_args = []
     for service in [snake_service_0, snake_service_1]:
         for route in service.routes:
-            if isinstance(route, model.Snake):
+            if isinstance(route, model.SnakeRoute):
                 snake_args.extend(["--name", route.name, "--url", route.baseroute])
 
     engine_service = model.Service(
@@ -121,7 +121,7 @@ def main():
         program=engine_program,
         args=["--browser", "--board-url", "http://localhost:9000", *snake_args],
         routes=[
-            model.Engine(
+            model.EngineRoute(
                 name="engine-0",
                 baseroute="http://localhost:8080",
             ),

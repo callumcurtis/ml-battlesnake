@@ -19,7 +19,7 @@ class Route(abc.ABC):
         pass
 
 
-class Snake(Route):
+class SnakeRoute(Route):
 
     def __init__(self, name: str, baseroute: str) -> None:
         self._name = name
@@ -37,7 +37,7 @@ class Snake(Route):
         return f"Snake(name={self.name}, baseroute={self.baseroute})"
 
 
-class BrowserSpectator(Route):
+class BrowserSpectatorRoute(Route):
 
     def __init__(
         self,
@@ -59,7 +59,7 @@ class BrowserSpectator(Route):
         return f"BrowserSpectator(name={self.name}, baseroute={self.baseroute})"
 
 
-class Engine(Route):
+class EngineRoute(Route):
     
         def __init__(
             self,

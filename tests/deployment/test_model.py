@@ -23,7 +23,7 @@ def snake_generator():
     def generator():
         i = 0
         while i:= i + 1:
-            yield model.Snake(
+            yield model.SnakeRoute(
                 name=f"test-snake-{i}",
                 baseroute=f"test-snake-{i}-baseroute",
             )
@@ -35,7 +35,7 @@ def browser_spectator_generator():
     def generator():
         i = 0
         while i:= i + 1:
-            yield model.BrowserSpectator(
+            yield model.BrowserSpectatorRoute(
                 name=f"test-browser-spectator-{i}",
                 baseroute=f"test-browser-spectator-{i}-baseroute",
             )
@@ -140,7 +140,7 @@ def test_service_start(monkeypatch):
 def test_snake_properties():
     name = "test-snake"
     baseroute = "test-snake-baseroute"
-    snake = model.Snake(
+    snake = model.SnakeRoute(
         name=name,
         baseroute=baseroute,
     )
@@ -151,7 +151,7 @@ def test_snake_properties():
 def test_snake_str():
     name = "test-snake"
     baseroute = "test-snake-baseroute"
-    snake = model.Snake(
+    snake = model.SnakeRoute(
         name=name,
         baseroute=baseroute,
     )
@@ -161,7 +161,7 @@ def test_snake_str():
 def test_browser_spectator_properties():
     name = "test-browser-spectator"
     baseroute = "test-browser-spectator-baseroute"
-    browser_spectator = model.BrowserSpectator(
+    browser_spectator = model.BrowserSpectatorRoute(
         name=name,
         baseroute=baseroute,
     )
@@ -172,7 +172,7 @@ def test_browser_spectator_properties():
 def test_browser_spectator_str():
     name = "test-browser-spectator"
     baseroute = "test-browser-spectator-baseroute"
-    browser_spectator = model.BrowserSpectator(
+    browser_spectator = model.BrowserSpectatorRoute(
         name=name,
         baseroute=baseroute,
     )
