@@ -1,3 +1,9 @@
+"""Adapters for the Battlesnake environment.
+
+Adapts Battlesnake game engines for use by client code such as
+custom PettingZoo and Gymnasium environments.
+"""
+
 import abc
 import copy
 

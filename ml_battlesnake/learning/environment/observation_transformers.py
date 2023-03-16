@@ -1,3 +1,5 @@
+"""Transformers of observations into formats suitable for neural networks."""
+
 import abc
 import functools
 
@@ -64,8 +66,7 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
         )
 
     def transform(self, observation: Observation):
-        """
-        Transforms the observation into an image.
+        """Transforms the observation into an image.
 
         The image is a 2D array of integers, where each integer
         represents a different element on the board. The integers
@@ -202,6 +203,7 @@ class ObservationToFlattenedArray(TransformAllMixin, ObservationTransformer):
         )
     
     def transform(self, observation: Observation):
+        """Transforms the observation into a flattened image array."""
         image = self._to_image.transform(observation)
         board = image.reshape(self._env_config.height, self._env_config.width)
         coord_to_scalar = lambda coord: (abs(coord.y) * self._env_config.width) + abs(coord.x)

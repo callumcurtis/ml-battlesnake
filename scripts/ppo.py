@@ -1,3 +1,5 @@
+"""Example of how to train a PPO agent to play Battlesnake using the ml-battlesnake library."""
+
 # stable-baselines 3 depends on gym, but we want to use its direct successor gymnasium
 # TODO: remove this workaround once stable-baselines 3 is updated to use gymnasium
 # see: https://github.com/DLR-RM/stable-baselines3/pull/1327
@@ -15,7 +17,6 @@ from stable_baselines3.common.callbacks import BaseCallback
 import supersuit
 import numpy as np
 import psutil
-
 
 from ml_battlesnake.common import paths
 from ml_battlesnake.learning.environment import (
@@ -35,8 +36,7 @@ from ml_battlesnake.learning.environment import (
 
 
 def combine_truncation_and_termination_into_done_in_steps(env):
-    """
-    Combine the truncation and termination arrays into a single done array in the step method of the given environment.
+    """Combine the truncation and termination arrays into a single done array in the step method of the given environment.
 
     stable-baselines 3 is using the step method signature from gymnasium < 0.26.0,
     meaning that it expects the wrapped step method to return a tuple of 4 elements

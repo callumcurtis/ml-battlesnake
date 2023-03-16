@@ -1,3 +1,5 @@
+"""Battlesnake environments in PettingZoo and Gymnasium formats."""
+
 import functools
 
 import pettingzoo
@@ -18,6 +20,7 @@ def make_parallel_pettingzoo_env(
     memory_buffer: MemoryBuffer,
     configuration: BattlesnakeEnvironmentConfiguration,
 ):
+    """Creates a parallel PettingZoo environment for Battlesnake."""
     env = BattlesnakeEnvironment(
         engine_adapter=engine_adapter,
         observation_transformer=observation_transformer,
@@ -25,6 +28,7 @@ def make_parallel_pettingzoo_env(
         memory_buffer=memory_buffer,
         configuration=configuration,
     )
+    # Adds support for agent removal during episodes
     env = supersuit.black_death_v3(env)
     return env
 
@@ -36,6 +40,12 @@ def make_gymnasium_vec_env(
     memory_buffer: MemoryBuffer,
     configuration: BattlesnakeEnvironmentConfiguration,
 ):
+    """Creates a vectorized Gymnasium environment for Battlesnake.
+    
+    Allows client algorithms to treat the environment as a vector of single-agent
+    environments, one for each Battlesnake. The size of the vector is equal to the
+    maximum number of agents in the environment.
+    """
     env = make_parallel_pettingzoo_env(
         engine_adapter=engine_adapter,
         observation_transformer=observation_transformer,
@@ -48,6 +58,10 @@ def make_gymnasium_vec_env(
 
 
 class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
+    """Battlesnake environment in parallel PettingZoo format.
+    
+    Refer to the official documentation for the parallel PettingZoo environment API.
+    """
 
     metadata = {"render_modes": ["human"]}
 

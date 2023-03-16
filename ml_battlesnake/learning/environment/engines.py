@@ -1,3 +1,5 @@
+"""Battlesnake engine implementations and Python bindings."""
+
 import ctypes
 import json
 import pathlib
@@ -13,6 +15,7 @@ class BattlesnakeEngine(abc.ABC):
 def _battlesnake_dll_engine():
 
     def triggers_load(func):
+        """Calls to the decorated method will trigger loading of the dll."""
         def decorator(self, *args, **kwargs):
             if not self._is_loaded():
                 self._load()

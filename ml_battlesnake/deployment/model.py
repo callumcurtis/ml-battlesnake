@@ -1,3 +1,9 @@
+"""Domain model for Battlesnake deployment.
+
+Can be used by scripts to automate the deployment of Battlesnake
+games, including game engines, spectators, and snakes.
+"""
+
 import abc
 import os
 import pathlib

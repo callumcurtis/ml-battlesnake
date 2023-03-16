@@ -1,3 +1,5 @@
+"""Example of how to deploy a local game of Battlesnake using the ml-battlesnake library."""
+
 import argparse
 import logging
 import sys

@@ -6,6 +6,7 @@ from .types import InitialState, Timestep
 
 
 class MemoryBuffer(collections.abc.Sequence):
+    """Buffer that stores the previous states of the environment."""
 
     def __init__(
         self,
