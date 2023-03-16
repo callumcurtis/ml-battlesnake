@@ -9,3 +9,5 @@ poetry install
 # TODO: install using poetry once stable-baselines3 is updated to use Gymnasium
 # stable-baselines3 = "==1.7.0"
 poetry run pip install stable-baselines3==1.7.0
+
+make compile
