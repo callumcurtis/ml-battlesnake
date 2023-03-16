@@ -159,12 +159,10 @@ class InitialStateBuilder:
         self.configuration = configuration
         return self
 
-    def with_observations(self, observations: Union[dict, Observation]) -> 'InitialStateBuilder':
-        if isinstance(observations, dict):
-            observations = {
-                agent: Observation.from_raw_observation(raw_observation)
-                for agent, raw_observation in observations.items()
-            }
+    def with_observations(self, observations: dict[str, Union[dict, Observation]]) -> 'InitialStateBuilder':
+        for agent, raw_observation in observations.items():
+            if isinstance(raw_observation, dict):
+                observations[agent] = Observation.from_raw_observation(raw_observation)
         self.observations = observations
         return self
 
@@ -214,12 +212,10 @@ class TimestepBuilder:
         self.actions = actions
         return self
 
-    def with_observations(self, observations: Union[dict, Observation]) -> 'TimestepBuilder':
-        if isinstance(observations, dict):
-            observations = {
-                agent: Observation.from_raw_observation(raw_observation)
-                for agent, raw_observation in observations.items()
-            }
+    def with_observations(self, observations: dict[str, Union[dict, Observation]]) -> 'TimestepBuilder':
+        for agent, raw_observation in observations.items():
+            if isinstance(raw_observation, dict):
+                observations[agent] = Observation.from_raw_observation(raw_observation)
         self.observations = observations
         return self
 
