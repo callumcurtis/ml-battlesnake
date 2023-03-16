@@ -35,14 +35,6 @@ def _battlesnake_dll_engine():
             self._done = None
             self._render = None
             self._responses = None
-            self._loaded_attrs = [
-                self._setup,
-                self._reset,
-                self._step,
-                self._done,
-                self._render,
-                self._responses,
-            ]
         
         def _load(self):
             assert not self._is_loaded(), "the dll is already loaded"
@@ -76,11 +68,20 @@ def _battlesnake_dll_engine():
             self._responses = responses
 
         def _is_loaded(self):
-            assert (
-                all(x is None for x in self._loaded_attrs)
-                or all(x is not None for x in self._loaded_attrs)
+            loadables = [
+                self._setup,
+                self._reset,
+                self._step,
+                self._done,
+                self._render,
+                self._responses,
+            ]
+            is_loaded = self._setup is not None
+            assert all(
+                loadable is not None if is_loaded else loadable is None
+                for loadable in loadables
             ), "the dll is in an inconsistent state"
-            return self._setup is not None
+            return is_loaded
 
         def active_snakes(self) -> list[str]:
             return list(snake for snake, response in self.responses().items() if not response["done"])
