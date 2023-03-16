@@ -1,7 +1,8 @@
 # stable-baselines 3 depends on gym, but we want to use its direct successor gymnasium
+# TODO: remove this workaround once stable-baselines 3 is updated to use gymnasium
+# see: https://github.com/DLR-RM/stable-baselines3/pull/1327
 import gymnasium
 import sys
-sys.path.append("")
 sys.modules["gym"] = gymnasium
 
 import pathlib
