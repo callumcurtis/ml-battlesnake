@@ -21,7 +21,7 @@ class ObservationTransformer(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def space(self):
+    def space(self) -> gymnasium.spaces.Space:
         pass
 
     @abc.abstractmethod
@@ -57,7 +57,7 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
         self._view_shape = view_shape
 
     @functools.cached_property
-    def space(self):
+    def space(self) -> gymnasium.spaces.Box:
         return gymnasium.spaces.Box(
             low=np.iinfo(self.DTYPE).min,
             high=np.iinfo(self.DTYPE).max,
@@ -194,7 +194,7 @@ class ObservationToFlattenedArray(TransformAllMixin, ObservationTransformer):
         self._to_image = ObservationToImage(env_config, egocentric=False)
     
     @functools.cached_property
-    def space(self):
+    def space(self) -> gymnasium.spaces.Box:
         return gymnasium.spaces.Box(
             low=np.iinfo(self.DTYPE).min,
             high=np.iinfo(self.DTYPE).max,

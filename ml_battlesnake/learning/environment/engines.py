@@ -36,7 +36,7 @@ def _battlesnake_dll_engine():
             self._render = None
             self._responses = None
         
-        def _load(self):
+        def _load(self) -> None:
             assert not self._is_loaded(), "the dll is already loaded"
             dll = ctypes.CDLL(self.dll_path)
 
@@ -67,7 +67,7 @@ def _battlesnake_dll_engine():
             self._render = render
             self._responses = responses
 
-        def _is_loaded(self):
+        def _is_loaded(self) -> bool:
             loadables = [
                 self._setup,
                 self._reset,

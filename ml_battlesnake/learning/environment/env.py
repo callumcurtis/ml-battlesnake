@@ -19,7 +19,7 @@ def make_parallel_pettingzoo_env(
     reward_function: RewardFunction,
     memory_buffer: MemoryBuffer,
     configuration: BattlesnakeEnvironmentConfiguration,
-):
+) -> pettingzoo.ParallelEnv:
     """Creates a parallel PettingZoo environment for Battlesnake."""
     env = BattlesnakeEnvironment(
         engine_adapter=engine_adapter,
@@ -39,7 +39,7 @@ def make_gymnasium_vec_env(
     reward_function: RewardFunction,
     memory_buffer: MemoryBuffer,
     configuration: BattlesnakeEnvironmentConfiguration,
-):
+) -> gymnasium.vector.VectorEnv:
     """Creates a vectorized Gymnasium environment for Battlesnake.
     
     Allows client algorithms to treat the environment as a vector of single-agent
@@ -80,7 +80,7 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
         self.configuration = configuration
 
     @property
-    def possible_agents(self):
+    def possible_agents(self) -> list[str]:
         return self.configuration.possible_agents
 
     @functools.cache
@@ -91,7 +91,7 @@ class BattlesnakeEnvironment(pettingzoo.ParallelEnv):
     def action_space(self, agent) -> gymnasium.spaces.Space:
         return gymnasium.spaces.Discrete(len(Movement))
 
-    def render(self):
+    def render(self) -> None:
         assert self.configuration.render_mode == "human", "Only human render mode is supported"
         self.engine_adapter.render()
     

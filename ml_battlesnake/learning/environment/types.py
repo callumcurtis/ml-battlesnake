@@ -79,7 +79,7 @@ class SnakeObservation:
         self.head = head
     
     @property
-    def length(self):
+    def length(self) -> int:
         return len(self.body)
     
     @classmethod
@@ -139,8 +139,8 @@ class InitialState:
 
     def __init__(
         self,
-        configuration,
-        observations,
+        configuration: BattlesnakeEnvironmentConfiguration,
+        observations: dict[str, Observation],
         infos = None,
     ):
         self.configuration = configuration
@@ -155,7 +155,7 @@ class InitialStateBuilder:
         self.observations = {}
         self.infos = {}
     
-    def with_configuration(self, configuration) -> 'InitialStateBuilder':
+    def with_configuration(self, configuration: BattlesnakeEnvironmentConfiguration) -> 'InitialStateBuilder':
         self.configuration = configuration
         return self
 
@@ -210,7 +210,7 @@ class TimestepBuilder:
         self.truncations = {}
         self.infos = {}
 
-    def with_actions(self, actions) -> 'TimestepBuilder':
+    def with_actions(self, actions: dict[str, int]) -> 'TimestepBuilder':
         self.actions = actions
         return self
 
@@ -223,15 +223,15 @@ class TimestepBuilder:
         self.observations = observations
         return self
 
-    def with_rewards(self, rewards) -> 'TimestepBuilder':
+    def with_rewards(self, rewards: dict[str, float]) -> 'TimestepBuilder':
         self.rewards = rewards
         return self
 
-    def with_terminations(self, terminations) -> 'TimestepBuilder':
+    def with_terminations(self, terminations: dict[str, bool]) -> 'TimestepBuilder':
         self.terminations = terminations
         return self
 
-    def with_truncations(self, truncations) -> 'TimestepBuilder':
+    def with_truncations(self, truncations: dict[str, bool]) -> 'TimestepBuilder':
         self.truncations = truncations
         return self
 

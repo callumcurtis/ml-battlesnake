@@ -21,7 +21,7 @@ class Route(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def baseroute(self):
+    def baseroute(self) -> str:
         pass
 
 
@@ -32,11 +32,11 @@ class SnakeRoute(Route):
         self._baseroute = baseroute
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @property
-    def baseroute(self):
+    def baseroute(self) -> str:
         return self._baseroute
     
     def __str__(self) -> str:
@@ -54,11 +54,11 @@ class BrowserSpectatorRoute(Route):
         self._baseroute = baseroute
     
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
     
     @property
-    def baseroute(self):
+    def baseroute(self) -> str:
         return self._baseroute
 
     def __str__(self) -> str:
@@ -76,11 +76,11 @@ class EngineRoute(Route):
             self._baseroute = baseroute
         
         @property
-        def name(self):
+        def name(self) -> str:
             return self._name
         
         @property
-        def baseroute(self):
+        def baseroute(self) -> str:
             return self._baseroute
     
         def __str__(self) -> str:
@@ -100,15 +100,15 @@ class Program:
         self._cwd = cwd
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
     
     @property
-    def entrypoint(self):
+    def entrypoint(self) -> list[str]:
         return self._entrypoint
     
     @property
-    def cwd(self):
+    def cwd(self) -> pathlib.Path:
         return self._cwd
     
     def __str__(self) -> str:
@@ -135,15 +135,15 @@ class Service:
         self._subscribe_to_exit_signal_for_cleanup()
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
     
     @property
-    def program(self):
+    def program(self) -> Program:
         return self._program
 
     @property
-    def routes(self):
+    def routes(self) -> list[Route]:
         return self._routes
 
     def start(self, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) -> None:
