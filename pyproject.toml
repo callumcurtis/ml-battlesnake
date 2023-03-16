@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "ml-battlesnake"
+version = "0.1.0"
+description = "Playing Battlesnake with machine learning"
+authors = ["Callum Curtis <105407637+callumcurtis@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "ml_battlesnake"}]
+
+[tool.poetry.dependencies]
+python = "==3.10.6"
+psutil = "==5.8.0"
+PettingZoo = "==1.22.3"
+torch = "==1.13.1"
+# Depends on Gym 0.21 which is not supported for installation by poetry.
+# Must use a workaround (found in post-create.sh) until sb3 is updated to
+# use Gymnasium (see: https://github.com/DLR-RM/stable-baselines3/pull/1327).
+# TODO: install using poetry once stable-baselines3 is updated to use Gymnasium
+# stable-baselines3 = "==1.7.0"
+flask = "==2.2.3"
+SuperSuit = "==3.7.1"
+tensorboard = "==2.11.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "==7.2.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
