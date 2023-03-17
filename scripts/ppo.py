@@ -291,11 +291,9 @@ def train(
         name_prefix=model_output_path.stem,
     )
 
-    model_load_path = model_input_path    
-
-    remaining_timesteps = lambda: total_timesteps - checkpoint_callback.num_timesteps_across_restarts
-
-    while remaining_timesteps():
+    while (remaining_timesteps := total_timesteps - checkpoint_callback.num_timesteps_across_restarts) > 0:
+        checkpoint_callback.on_restart()
+        model_load_path = cp if (cp := checkpoint_callback.last_checkpoint_path()) else model_input_path
         env = supersuit.concat_vec_envs_v1(base_env, num_envs, num_cpus=num_envs, base_class="stable_baselines3")
         env = combine_truncation_and_termination_into_done_in_steps(env)
         env = VecMonitor(env)
@@ -316,14 +314,11 @@ def train(
         if model_load_path is not None:
             model.set_parameters(model_load_path, exact_match=True)
         try:
-            model.learn(total_timesteps=remaining_timesteps(), callback=[checkpoint_callback, resource_monitor_callback])
-            model.save(model_output_path)
+            model.learn(total_timesteps=remaining_timesteps, callback=[checkpoint_callback, resource_monitor_callback])
         except (OSError, EOFError):
             pass
-        if remaining_timesteps():
-            checkpoint_callback.on_restart()
-            model_load_path = cp if (cp := checkpoint_callback.last_checkpoint_path()) else model_input_path
         model.env.close()
+    model.save(model_output_path)
 
 
 def demo(
