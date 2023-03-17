@@ -911,7 +911,7 @@ numpy = ">=1.19.0"
 type = "git"
 url = "https://github.com/callumcurtis/supersuit.git"
 reference = "ml-battlesnake"
-resolved_reference = "ce0ab24dd46bbac86ceeb9d08b373eaa75b9d3c4"
+resolved_reference = "51a9c3294b2e855a240d75f0dc937a29076e55fc"
 
 [[package]]
 name = "tensorboard"
