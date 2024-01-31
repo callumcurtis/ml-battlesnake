@@ -249,3 +249,38 @@ class ObservationToFlattenedArray(TransformAllMixin, ObservationTransformer):
 
     def empty_observation(self):
         return np.zeros(self.space.shape, dtype=self.DTYPE)
+
+
+class ObservationToBinaryMatrices(TransformAllMixin, ObservationTransformer):
+
+    DTYPE = np.ubyte
+
+    def __init__(
+        self,
+        observation_to_image: ObservationToImage,
+    ):
+        assert(observation_to_image.NUM_CHANNELS == 1, "Only one input channel is currently supported")
+        self._shape = (
+            len(observation_to_image.PixelClass),
+            *observation_to_image.space.shape[1:],
+        )
+        self._to_image = observation_to_image
+
+    @functools.cached_property
+    def space(self) -> gymnasium.spaces.Box:
+        return gymnasium.spaces.Box(
+            low=0,
+            high=1,
+            shape=self._shape,
+            dtype=self.DTYPE,
+        )
+
+    def transform(self, observation: Observation) -> np.ndarray:
+        image = self._to_image.transform(observation)
+        binary_matrices = np.zeros(self.space.shape, dtype=self.DTYPE)
+        for i, pixel_class in enumerate(self._to_image.PixelClass):
+            binary_matrices[i] = image[0] == self._to_image.value_by_pixel_class[pixel_class]
+        return binary_matrices
+
+    def empty_observation(self):
+        return np.zeros(self.space.shape, dtype=self.DTYPE)
