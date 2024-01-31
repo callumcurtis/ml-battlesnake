@@ -1,6 +1,7 @@
 bin/
 .venv/
 scratches/
+temp/
 .rubberduck/template/**/local/
 
 #### Following from: https://github.com/github/gitignore/blob/main/Python.gitignore
