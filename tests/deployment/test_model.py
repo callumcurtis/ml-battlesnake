@@ -1,4 +1,6 @@
 import pathlib
+import subprocess
+from unittest.mock import Mock
 
 import pytest
 
@@ -110,7 +112,7 @@ def test_service_start(monkeypatch):
     args = ["arg-0", "arg-1", "arg-2"]
     entrypoint = ["start", "test", "program"]
     cwd = pathlib.Path("test-program-path")
-    popen_result = "popen-result"
+    mock_popen = Mock()
 
     program = model.Program(
         name="test-program",
@@ -126,15 +128,11 @@ def test_service_start(monkeypatch):
         routes=[]
     )
 
-    def verify_popen_usage(cmd, **kwargs):
-        assert cmd == entrypoint + args
-        assert kwargs["cwd"] == cwd
-        assert kwargs["env"] == {**old_env, **added_env}
-        return popen_result
-
-    monkeypatch.setattr("subprocess.Popen", lambda *args, **kwargs: verify_popen_usage(*args, **kwargs))
+    monkeypatch.setattr("subprocess.Popen", mock_popen)
+    # TODO: inject process abstractions into service model rather than using mocks through reassignment
+    service.stop = Mock()
     service.start()
-    assert service._popen == popen_result
+    mock_popen.assert_called_once_with(entrypoint + args, cwd=cwd, env={**old_env, **added_env}, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
 
 def test_snake_properties():
