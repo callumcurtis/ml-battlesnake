@@ -117,3 +117,15 @@ class TestObservationToImage:
             for y in range(11):
                 if (x, y) not in [(5, 9), (5, 1), (1, 5), (9, 5), (6, 10), (6, 0), (0, 6), (10, 4), (5, 5)]:
                     assert image[0, x, y] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.EMPTY]
+
+    def test_food_appears(
+        self,
+        observation_to_image: ObservationToImage,
+        observation_with_four_snakes: Observation,
+    ):
+        image = observation_to_image.transform(observation_with_four_snakes)
+        assert image[0, 6, 10] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.FOOD]
+        assert image[0, 6, 0] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.FOOD]
+        assert image[0, 0, 6] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.FOOD]
+        assert image[0, 10, 4] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.FOOD]
+        assert image[0, 5, 5] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.FOOD]
