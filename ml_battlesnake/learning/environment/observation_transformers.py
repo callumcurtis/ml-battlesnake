@@ -109,8 +109,10 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
         the integer value of a snake part encodes the direction to
         the next snake part (ordered from tail to head).
         """
+        # TODO: instead, delegate to the binary matrices transformer and squash the results
+
         coords_by_pixel_class = {
-            self.PixelClass.FOOD: tuple((food.x, food.y) for food in observation.food),
+            self.PixelClass.FOOD: list((food.x, food.y) for food in observation.food),
         }
 
         def get_coords_by_direction_to_next_snake_part(snakes: list[SnakeObservation]):
@@ -141,9 +143,12 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
         for direction_to_next_snake_part, coords in get_coords_by_direction_to_next_snake_part(observation.snakes).items():
             coords_by_pixel_class[direction_to_next_snake_part] = tuple(coords)
 
+        # remove the "on top" pixels as otherwise they will overwrite the more important direction pixels
+        coords_by_pixel_class.pop(self.PixelClass.NEXT_SNAKE_PART_IS_ON_TOP, None)
+
         for snake in observation.snakes:
             head_class = self.PixelClass.YOUR_HEAD if snake.id == observation.you.id else self.PixelClass.ENEMY_HEAD
-            coords_by_pixel_class[head_class] = ((snake.head.x, snake.head.y),)
+            coords_by_pixel_class.setdefault(head_class, []).append((snake.head.x, snake.head.y))
 
         board_array = np.zeros(self._board_shape, dtype=self.DTYPE)
         assert board_array.shape[0] == 1, "Only one channel is currently supported"
@@ -163,7 +168,7 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
             view_array = board_array
 
         # match the battlesnake api orientation by moving origin to bottom left
-        view_array[0] = np.rot90(view_array[0])
+        view_array[0] = np.rot90(view_array[0], axes=(0, 1))
 
         return view_array
 

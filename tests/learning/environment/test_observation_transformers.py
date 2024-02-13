@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from ml_battlesnake.learning.environment.types import (
@@ -140,6 +141,7 @@ def env_config():
 
 
 class TestObservationToImage:
+    # TODO: remove need for rot90 call in each test case
 
     @pytest.fixture
     def observation_to_image(
@@ -154,6 +156,7 @@ class TestObservationToImage:
         observation_of_initial_game_state_with_four_snakes: Observation,
     ):
         image = observation_to_image.transform(observation_of_initial_game_state_with_four_snakes)
+        image[0] = np.rot90(image[0], axes=(1, 0))
         assert image[0, 5, 9] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.YOUR_HEAD]
         assert image[0, 5, 1] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.ENEMY_HEAD]
         assert image[0, 1, 5] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.ENEMY_HEAD]
@@ -165,6 +168,7 @@ class TestObservationToImage:
         observation_of_initial_game_state_with_four_snakes: Observation,
     ):
         image = observation_to_image.transform(observation_of_initial_game_state_with_four_snakes)
+        image[0] = np.rot90(image[0], axes=(1, 0))
         for x in range(11):
             for y in range(11):
                 if (x, y) not in [(5, 9), (5, 1), (1, 5), (9, 5), (6, 10), (6, 0), (0, 6), (10, 4), (5, 5)]:
@@ -176,6 +180,7 @@ class TestObservationToImage:
         observation_of_initial_game_state_with_four_snakes: Observation,
     ):
         image = observation_to_image.transform(observation_of_initial_game_state_with_four_snakes)
+        image[0] = np.rot90(image[0], axes=(1, 0))
         assert image[0, 6, 10] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.FOOD]
         assert image[0, 6, 0] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.FOOD]
         assert image[0, 0, 6] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.FOOD]
@@ -188,6 +193,7 @@ class TestObservationToImage:
         observation_of_early_game_state_with_two_snakes: Observation,
     ):
         image = observation_to_image.transform(observation_of_early_game_state_with_two_snakes)
+        image[0] = np.rot90(image[0], axes=(1, 0))
         assert image[0, 3, 7] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.YOUR_HEAD]
         assert image[0, 2, 7] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.NEXT_SNAKE_PART_IS_RIGHT]
         assert image[0, 2, 6] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.NEXT_SNAKE_PART_IS_UP]
