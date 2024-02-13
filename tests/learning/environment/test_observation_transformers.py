@@ -79,6 +79,57 @@ def observation_of_initial_game_state_with_four_snakes():
         )
     )
 
+
+@pytest.fixture
+def observation_of_early_game_state_with_two_snakes():
+    return Observation(
+        turn=6,
+        snakes=[
+            SnakeObservation(
+                id="agent_2",
+                name="agent_2",
+                health=94,
+                body=[
+                    Coordinates(x=3, y=7),
+                    Coordinates(x=2, y=7),
+                    Coordinates(x=2, y=6)
+                ],
+                head=Coordinates(x=3, y=7)
+            ),
+            SnakeObservation(
+                id="agent_3",
+                name="agent_3",
+                health=94,
+                body=[
+                    Coordinates(x=4, y=6),
+                    Coordinates(x=5, y=6),
+                    Coordinates(x=5, y=7)
+                ],
+                head=Coordinates(x=4, y=6)
+            )
+        ],
+        food=[
+            Coordinates(x=10, y=4),
+            Coordinates(x=4, y=0),
+            Coordinates(x=0, y=6),
+            Coordinates(x=6, y=10),
+            Coordinates(x=5, y=5),
+            Coordinates(x=1, y=2)
+        ],
+        you=SnakeObservation(
+            id="agent_2",
+            name="agent_2",
+            health=94,
+            body=[
+                Coordinates(x=3, y=7),
+                Coordinates(x=2, y=7),
+                Coordinates(x=2, y=6)
+            ],
+            head=Coordinates(x=3, y=7)
+        )
+    )
+
+
 @pytest.fixture
 def env_config():
     return BattlesnakeEnvironmentConfiguration(
@@ -86,6 +137,7 @@ def env_config():
         width=11,
         height=11,
     )
+
 
 class TestObservationToImage:
 
@@ -129,3 +181,16 @@ class TestObservationToImage:
         assert image[0, 0, 6] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.FOOD]
         assert image[0, 10, 4] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.FOOD]
         assert image[0, 5, 5] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.FOOD]
+
+    def test_snake_body_directions(
+        self,
+        observation_to_image: ObservationToImage,
+        observation_of_early_game_state_with_two_snakes: Observation,
+    ):
+        image = observation_to_image.transform(observation_of_early_game_state_with_two_snakes)
+        assert image[0, 3, 7] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.YOUR_HEAD]
+        assert image[0, 2, 7] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.NEXT_SNAKE_PART_IS_RIGHT]
+        assert image[0, 2, 6] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.NEXT_SNAKE_PART_IS_UP]
+        assert image[0, 4, 6] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.ENEMY_HEAD]
+        assert image[0, 5, 6] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.NEXT_SNAKE_PART_IS_LEFT]
+        assert image[0, 5, 7] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.NEXT_SNAKE_PART_IS_DOWN]
