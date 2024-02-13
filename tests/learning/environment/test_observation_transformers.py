@@ -10,7 +10,7 @@ from ml_battlesnake.learning.environment.observation_transformers import Observa
 
 
 @pytest.fixture
-def observation_with_four_snakes():
+def observation_of_initial_game_state_with_four_snakes():
     return Observation(
         turn=0,
         snakes=[
@@ -99,9 +99,9 @@ class TestObservationToImage:
     def test_snake_heads_appear(
         self,
         observation_to_image: ObservationToImage,
-        observation_with_four_snakes: Observation,
+        observation_of_initial_game_state_with_four_snakes: Observation,
     ):
-        image = observation_to_image.transform(observation_with_four_snakes)
+        image = observation_to_image.transform(observation_of_initial_game_state_with_four_snakes)
         assert image[0, 5, 9] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.YOUR_HEAD]
         assert image[0, 5, 1] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.ENEMY_HEAD]
         assert image[0, 1, 5] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.ENEMY_HEAD]
@@ -110,9 +110,9 @@ class TestObservationToImage:
     def test_empty_spaces_appear(
         self,
         observation_to_image: ObservationToImage,
-        observation_with_four_snakes: Observation,
+        observation_of_initial_game_state_with_four_snakes: Observation,
     ):
-        image = observation_to_image.transform(observation_with_four_snakes)
+        image = observation_to_image.transform(observation_of_initial_game_state_with_four_snakes)
         for x in range(11):
             for y in range(11):
                 if (x, y) not in [(5, 9), (5, 1), (1, 5), (9, 5), (6, 10), (6, 0), (0, 6), (10, 4), (5, 5)]:
@@ -121,9 +121,9 @@ class TestObservationToImage:
     def test_food_appears(
         self,
         observation_to_image: ObservationToImage,
-        observation_with_four_snakes: Observation,
+        observation_of_initial_game_state_with_four_snakes: Observation,
     ):
-        image = observation_to_image.transform(observation_with_four_snakes)
+        image = observation_to_image.transform(observation_of_initial_game_state_with_four_snakes)
         assert image[0, 6, 10] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.FOOD]
         assert image[0, 6, 0] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.FOOD]
         assert image[0, 0, 6] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.FOOD]
