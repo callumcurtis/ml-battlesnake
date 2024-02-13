@@ -106,3 +106,14 @@ class TestObservationToImage:
         assert image[0, 5, 1] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.ENEMY_HEAD]
         assert image[0, 1, 5] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.ENEMY_HEAD]
         assert image[0, 9, 5] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.ENEMY_HEAD]
+
+    def test_empty_spaces_appear(
+        self,
+        observation_to_image: ObservationToImage,
+        observation_with_four_snakes: Observation,
+    ):
+        image = observation_to_image.transform(observation_with_four_snakes)
+        for x in range(11):
+            for y in range(11):
+                if (x, y) not in [(5, 9), (5, 1), (1, 5), (9, 5), (6, 10), (6, 0), (0, 6), (10, 4), (5, 5)]:
+                    assert image[0, x, y] == observation_to_image.value_by_pixel_class[observation_to_image.PixelClass.EMPTY]
