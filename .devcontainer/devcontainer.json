@@ -5,11 +5,24 @@
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	"image": "mcr.microsoft.com/devcontainers/base:jammy",
 	"features": {
-		"ghcr.io/devcontainers/features/go:1": {},
-		"ghcr.io/devcontainers/features/python:1": {},
-		"ghcr.io/devcontainers/features/docker-in-docker:2": {},
+		"ghcr.io/devcontainers/features/go:1": {
+			"version": "1.18"
+		},
+		"ghcr.io/devcontainers/features/python:1": {
+			"installTools": true,
+			"version": "3.10.6"
+		},
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {
+			"moby": true,
+			"azureDnsAutoDetection": true,
+			"installDockerBuildx": true,
+			"version": "20.10",
+			"dockerDashComposeVersion": "v2"
+		},
 		"ghcr.io/devcontainers/features/node:1": {
-			"version": "16"
+			"nodeGypDependencies": true,
+			"version": "21",
+			"nvmVersion": "0.39"
 		}
 	},
 
