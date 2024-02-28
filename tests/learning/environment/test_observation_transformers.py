@@ -229,3 +229,17 @@ class TestObservationToBinaryMatrices:
         expected[10, 4] = 1
         expected[5, 5] = 1
         assert np.array_equal(food_matrix, expected)
+
+    def test_next_snake_part_is_on_top_binary_matrix(
+        self,
+        observation_to_binary_matrices: ObservationToBinaryMatrices,
+        observation_of_initial_game_state_with_four_snakes: Observation,
+    ):
+        matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
+        next_snake_part_is_on_top_matrix = matrices[observation_to_binary_matrices.get_matrix_index(GameEntity.NEXT_SNAKE_PART_IS_ON_TOP)]
+        expected = np.zeros((11, 11))
+        expected[5, 9] = 1
+        expected[5, 1] = 1
+        expected[1, 5] = 1
+        expected[9, 5] = 1
+        assert np.array_equal(next_snake_part_is_on_top_matrix, expected)
