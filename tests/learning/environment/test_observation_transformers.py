@@ -8,8 +8,9 @@ from ml_battlesnake.learning.environment.types import (
     BattlesnakeEnvironmentConfiguration,
 )
 from ml_battlesnake.learning.environment.observation_transformers import (
-    ObservationToImage,
     GameEntity,
+    ObservationToBinaryMatrices,
+    ObservationToImage,
 )
 
 
@@ -203,3 +204,28 @@ class TestObservationToImage:
         assert image[0, 4, 6] == observation_to_image.value_by_game_entity[GameEntity.ENEMY_HEAD]
         assert image[0, 5, 6] == observation_to_image.value_by_game_entity[GameEntity.NEXT_SNAKE_PART_IS_LEFT]
         assert image[0, 5, 7] == observation_to_image.value_by_game_entity[GameEntity.NEXT_SNAKE_PART_IS_DOWN]
+
+
+class TestObservationToBinaryMatrices:
+
+    @pytest.fixture
+    def observation_to_binary_matrices(
+        self,
+        env_config: BattlesnakeEnvironmentConfiguration,
+    ):
+        return ObservationToBinaryMatrices(env_config)
+
+    def test_food_binary_matrix(
+        self,
+        observation_to_binary_matrices: ObservationToBinaryMatrices,
+        observation_of_initial_game_state_with_four_snakes: Observation,
+    ):
+        matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
+        food_matrix = matrices[observation_to_binary_matrices.get_matrix_index(GameEntity.FOOD)]
+        expected = np.zeros((11, 11))
+        expected[6, 10] = 1
+        expected[6, 0] = 1
+        expected[0, 6] = 1
+        expected[10, 4] = 1
+        expected[5, 5] = 1
+        assert np.array_equal(food_matrix, expected)
