@@ -10,6 +10,19 @@ import gymnasium
 from .types import BattlesnakeEnvironmentConfiguration, Observation, SnakeObservation
 
 
+class GameEntity(enum.Enum):
+    EMPTY = enum.auto()
+    FOOD = enum.auto()
+    NEXT_SNAKE_PART_IS_ON_TOP = enum.auto()
+    NEXT_SNAKE_PART_IS_UP = enum.auto()
+    NEXT_SNAKE_PART_IS_DOWN = enum.auto()
+    NEXT_SNAKE_PART_IS_LEFT = enum.auto()
+    NEXT_SNAKE_PART_IS_RIGHT = enum.auto()
+    ENEMY_HEAD = enum.auto()
+    YOUR_HEAD = enum.auto()
+    WALL = enum.auto()
+
+
 class ObservationTransformer(abc.ABC):
 
     @abc.abstractmethod
@@ -44,18 +57,6 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
     DTYPE = np.uint8
     NUM_CHANNELS = 1
 
-    class PixelClass(enum.Enum):
-        EMPTY = enum.auto()
-        FOOD = enum.auto()
-        NEXT_SNAKE_PART_IS_ON_TOP = enum.auto()
-        NEXT_SNAKE_PART_IS_UP = enum.auto()
-        NEXT_SNAKE_PART_IS_DOWN = enum.auto()
-        NEXT_SNAKE_PART_IS_LEFT = enum.auto()
-        NEXT_SNAKE_PART_IS_RIGHT = enum.auto()
-        ENEMY_HEAD = enum.auto()
-        YOUR_HEAD = enum.auto()
-        WALL = enum.auto()
-
     def __init__(
         self,
         env_config: BattlesnakeEnvironmentConfiguration,
@@ -79,30 +80,30 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
         )
 
     @functools.cached_property
-    def possible_directions_to_next_snake_part(self) -> list[PixelClass]:
+    def possible_directions_to_next_snake_part(self) -> list[GameEntity]:
         return [
-            self.PixelClass.NEXT_SNAKE_PART_IS_ON_TOP,
-            self.PixelClass.NEXT_SNAKE_PART_IS_UP,
-            self.PixelClass.NEXT_SNAKE_PART_IS_DOWN,
-            self.PixelClass.NEXT_SNAKE_PART_IS_LEFT,
-            self.PixelClass.NEXT_SNAKE_PART_IS_RIGHT,
+            GameEntity.NEXT_SNAKE_PART_IS_ON_TOP,
+            GameEntity.NEXT_SNAKE_PART_IS_UP,
+            GameEntity.NEXT_SNAKE_PART_IS_DOWN,
+            GameEntity.NEXT_SNAKE_PART_IS_LEFT,
+            GameEntity.NEXT_SNAKE_PART_IS_RIGHT,
         ]
 
     @functools.cached_property
-    def value_by_pixel_class(self) -> dict[PixelClass, int]:
-        value_spacing = self.space.high.item(0) // (len(self.PixelClass) - 1)
-        assert value_spacing > 0, "Not enough space to encode all pixel classes"
+    def value_by_game_entity(self) -> dict[GameEntity, int]:
+        value_spacing = self.space.high.item(0) // (len(GameEntity) - 1)
+        assert value_spacing > 0, "Not enough space to encode all game entities"
         return {
-            pixel_class: self.space.low.item(0) + (i * value_spacing)
-            for i, pixel_class in enumerate(self.PixelClass)
+            game_entity: self.space.low.item(0) + (i * value_spacing)
+            for i, game_entity in enumerate(GameEntity)
         }
 
     def transform(self, observation: Observation):
         """Transforms the observation into an image.
 
         The image is a 2D array of integers, where each integer
-        represents a different pixel class on the board. The integers
-        representing pixel classes are spread evenly across the range
+        represents a different game entity on the board. The integers
+        representing game entities are spread evenly across the range
         of the dtype.
 
         Snakes are encoded using a linked-list representation where
@@ -111,8 +112,8 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
         """
         # TODO: instead, delegate to the binary matrices transformer and squash the results
 
-        coords_by_pixel_class = {
-            self.PixelClass.FOOD: list((food.x, food.y) for food in observation.food),
+        coords_by_game_entity = {
+            GameEntity.FOOD: list((food.x, food.y) for food in observation.food),
         }
 
         def get_coords_by_direction_to_next_snake_part(snakes: list[SnakeObservation]):
@@ -126,39 +127,39 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
                         next_snake_part_coord[1] - snake_part_coord[1],
                     )
                     if coord_delta == (0, 1):
-                        direction_to_next_snake_part = self.PixelClass.NEXT_SNAKE_PART_IS_UP
+                        direction_to_next_snake_part = GameEntity.NEXT_SNAKE_PART_IS_UP
                     elif coord_delta == (0, -1):
-                        direction_to_next_snake_part = self.PixelClass.NEXT_SNAKE_PART_IS_DOWN
+                        direction_to_next_snake_part = GameEntity.NEXT_SNAKE_PART_IS_DOWN
                     elif coord_delta == (1, 0):
-                        direction_to_next_snake_part = self.PixelClass.NEXT_SNAKE_PART_IS_RIGHT
+                        direction_to_next_snake_part = GameEntity.NEXT_SNAKE_PART_IS_RIGHT
                     elif coord_delta == (-1, 0):
-                        direction_to_next_snake_part = self.PixelClass.NEXT_SNAKE_PART_IS_LEFT
+                        direction_to_next_snake_part = GameEntity.NEXT_SNAKE_PART_IS_LEFT
                     elif coord_delta == (0, 0):
-                        direction_to_next_snake_part = self.PixelClass.NEXT_SNAKE_PART_IS_ON_TOP
+                        direction_to_next_snake_part = GameEntity.NEXT_SNAKE_PART_IS_ON_TOP
                     else:
                         raise ValueError(f"Unexpected coord delta: {coord_delta}")
                     coords_by_direction_to_next_snake_part[direction_to_next_snake_part].append(snake_part_coord)
             return coords_by_direction_to_next_snake_part
 
         for direction_to_next_snake_part, coords in get_coords_by_direction_to_next_snake_part(observation.snakes).items():
-            coords_by_pixel_class[direction_to_next_snake_part] = tuple(coords)
+            coords_by_game_entity[direction_to_next_snake_part] = tuple(coords)
 
-        # remove the "on top" pixels as otherwise they will overwrite the more important direction pixels
-        coords_by_pixel_class.pop(self.PixelClass.NEXT_SNAKE_PART_IS_ON_TOP, None)
+        # remove the "on top" game entities as otherwise they will overwrite the more important direction entities
+        coords_by_game_entity.pop(GameEntity.NEXT_SNAKE_PART_IS_ON_TOP, None)
 
         for snake in observation.snakes:
-            head_class = self.PixelClass.YOUR_HEAD if snake.id == observation.you.id else self.PixelClass.ENEMY_HEAD
-            coords_by_pixel_class.setdefault(head_class, []).append((snake.head.x, snake.head.y))
+            head_class = GameEntity.YOUR_HEAD if snake.id == observation.you.id else GameEntity.ENEMY_HEAD
+            coords_by_game_entity.setdefault(head_class, []).append((snake.head.x, snake.head.y))
 
         board_array = np.zeros(self._board_shape, dtype=self.DTYPE)
         assert board_array.shape[0] == 1, "Only one channel is currently supported"
-        for pixel_class, coords in coords_by_pixel_class.items():
+        for game_entity, coords in coords_by_game_entity.items():
             if coords:
-                board_array[0][tuple(zip(*coords))] = self.value_by_pixel_class[pixel_class]
+                board_array[0][tuple(zip(*coords))] = self.value_by_game_entity[game_entity]
 
         if self._egocentric:
             # place the board array within a larger array representing the egocentric view
-            view_array = np.full(self._view_shape, self.value_by_pixel_class[self.PixelClass.WALL], dtype=self.DTYPE)
+            view_array = np.full(self._view_shape, self.value_by_game_entity[GameEntity.WALL], dtype=self.DTYPE)
             x0 = self._view_shape[1] - self._board_shape[1] - observation.you.head.x
             x1 = x0 + self._board_shape[1]
             y0 = self._view_shape[2] - self._board_shape[2] - observation.you.head.y
@@ -266,7 +267,7 @@ class ObservationToBinaryMatrices(TransformAllMixin, ObservationTransformer):
     ):
         assert(observation_to_image.NUM_CHANNELS == 1, "Only one input channel is currently supported")
         self._shape = (
-            len(observation_to_image.PixelClass),
+            len(GameEntity),
             *observation_to_image.space.shape[1:],
         )
         self._to_image = observation_to_image
@@ -283,8 +284,8 @@ class ObservationToBinaryMatrices(TransformAllMixin, ObservationTransformer):
     def transform(self, observation: Observation) -> np.ndarray:
         image = self._to_image.transform(observation)
         binary_matrices = np.zeros(self.space.shape, dtype=self.DTYPE)
-        for i, pixel_class in enumerate(self._to_image.PixelClass):
-            binary_matrices[i] = image[0] == self._to_image.value_by_pixel_class[pixel_class]
+        for i, game_entity in enumerate(GameEntity):
+            binary_matrices[i] = image[0] == self._to_image.value_by_game_entity[game_entity]
         return binary_matrices
 
     def empty_observation(self):
