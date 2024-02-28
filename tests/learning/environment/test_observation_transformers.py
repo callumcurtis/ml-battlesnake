@@ -300,3 +300,14 @@ class TestObservationToBinaryMatrices:
         expected[1, 5] = 1
         expected[9, 5] = 1
         assert np.array_equal(enemy_head_matrix, expected)
+
+    def test_your_head_binary_matrix(
+        self,
+        observation_to_binary_matrices: ObservationToBinaryMatrices,
+        observation_of_initial_game_state_with_four_snakes: Observation,
+    ):
+        matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
+        your_head_matrix = matrices[observation_to_binary_matrices.get_matrix_index(GameEntity.YOUR_HEAD)]
+        expected = np.zeros((11, 11))
+        expected[5, 9] = 1
+        assert np.array_equal(your_head_matrix, expected)
