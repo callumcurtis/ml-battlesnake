@@ -228,8 +228,10 @@ class TestObservationToBinaryMatrices:
         self,
         observation_to_binary_matrices: ObservationToBinaryMatrices,
         observation_of_initial_game_state_with_four_snakes: Observation,
+        board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
+        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
         food_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.FOOD)]
         expected = np.zeros((11, 11))
         expected[6, 10] = 1
@@ -243,8 +245,10 @@ class TestObservationToBinaryMatrices:
         self,
         observation_to_binary_matrices: ObservationToBinaryMatrices,
         observation_of_initial_game_state_with_four_snakes: Observation,
+        board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
+        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
         next_snake_part_is_on_top_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_ON_TOP)]
         expected = np.zeros((11, 11))
         expected[5, 9] = 1
@@ -257,8 +261,10 @@ class TestObservationToBinaryMatrices:
         self,
         observation_to_binary_matrices: ObservationToBinaryMatrices,
         observation_of_early_game_state_with_two_snakes: Observation,
+        board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_early_game_state_with_two_snakes)
+        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
         next_snake_part_is_up_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_UP)]
         expected = np.zeros((11, 11))
         expected[2, 6] = 1
@@ -268,8 +274,10 @@ class TestObservationToBinaryMatrices:
         self,
         observation_to_binary_matrices: ObservationToBinaryMatrices,
         observation_of_early_game_state_with_two_snakes: Observation,
+        board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_early_game_state_with_two_snakes)
+        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
         next_snake_part_is_down_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_DOWN)]
         expected = np.zeros((11, 11))
         expected[5, 7] = 1
@@ -279,8 +287,10 @@ class TestObservationToBinaryMatrices:
         self,
         observation_to_binary_matrices: ObservationToBinaryMatrices,
         observation_of_early_game_state_with_two_snakes: Observation,
+        board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_early_game_state_with_two_snakes)
+        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
         next_snake_part_is_left_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_LEFT)]
         expected = np.zeros((11, 11))
         expected[5, 6] = 1
@@ -290,8 +300,10 @@ class TestObservationToBinaryMatrices:
         self,
         observation_to_binary_matrices: ObservationToBinaryMatrices,
         observation_of_early_game_state_with_two_snakes: Observation,
+        board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_early_game_state_with_two_snakes)
+        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
         next_snake_part_is_right_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_RIGHT)]
         expected = np.zeros((11, 11))
         expected[2, 7] = 1
@@ -301,8 +313,10 @@ class TestObservationToBinaryMatrices:
         self,
         observation_to_binary_matrices: ObservationToBinaryMatrices,
         observation_of_initial_game_state_with_four_snakes: Observation,
+        board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
+        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
         enemy_head_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.ENEMY_HEAD)]
         expected = np.zeros((11, 11))
         expected[5, 1] = 1
@@ -314,8 +328,10 @@ class TestObservationToBinaryMatrices:
         self,
         observation_to_binary_matrices: ObservationToBinaryMatrices,
         observation_of_initial_game_state_with_four_snakes: Observation,
+        board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
+        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
         your_head_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.YOUR_HEAD)]
         expected = np.zeros((11, 11))
         expected[5, 9] = 1
