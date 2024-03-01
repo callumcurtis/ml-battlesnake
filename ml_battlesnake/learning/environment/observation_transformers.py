@@ -23,6 +23,17 @@ class BoardEntity(enum.Enum):
     WALL = enum.auto()
 
 
+class BoardOrientationTransformer:
+
+    def to_natural_coordinate_system(self, battlesnake_array: np.ndarray) -> np.ndarray:
+        """Transforms the battlesnake coordinate system to the natural one."""
+        return np.rot90(battlesnake_array, k=-1, axes=(1, 2))
+
+    def to_battlesnake_coordinate_system(self, natural_array: np.ndarray) -> np.ndarray:
+        """Transforms the natural coordinate system to the battlesnake one."""
+        return np.rot90(natural_array, k=1, axes=(1, 2))
+
+
 class ObservationTransformer(abc.ABC):
 
     @abc.abstractmethod
@@ -61,9 +72,11 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
         self,
         env_config: BattlesnakeEnvironmentConfiguration,
         egocentric: bool = False,
+        board_orientation_transformer: BoardOrientationTransformer = BoardOrientationTransformer(),
     ):
         self._env_config = env_config
         self._egocentric = egocentric
+        self._board_orientation_transformer = board_orientation_transformer
 
         board_shape = (self.NUM_CHANNELS, self._env_config.height, self._env_config.width)
         view_shape = (self.NUM_CHANNELS, board_shape[1] * 2 - 1, board_shape[2] * 2 - 1) if egocentric else board_shape
@@ -168,8 +181,7 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
         else:
             view_array = board_array
 
-        # match the battlesnake api orientation by moving origin to bottom left
-        view_array[0] = np.rot90(view_array[0], axes=(0, 1))
+        view_array = self._board_orientation_transformer.to_battlesnake_coordinate_system(view_array)
 
         return view_array
 
