@@ -68,7 +68,7 @@ class TransformAllMixin:
         }
 
 
-class ObservationToImage(TransformAllMixin, ObservationTransformer):
+class ObservationToMatrix(TransformAllMixin, ObservationTransformer):
 
     DTYPE = np.uint8
     NUM_CHANNELS = 1
@@ -117,9 +117,9 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
         }
 
     def transform(self, observation: Observation):
-        """Transforms the observation into an image.
+        """Transforms the observation into a matrix.
 
-        The image is a 2D array of integers, where each integer
+        The matrix is a 2D array of integers, where each integer
         represents a different entity on the board. The integers
         representing game entities are spread evenly across the range
         of the dtype.
@@ -227,7 +227,7 @@ class ObservationToFlattenedArray(TransformAllMixin, ObservationTransformer):
         if include_enemy_health:
             size += (len(env_config.possible_agents) - 1) * 2
         self._shape = (size,)
-        self._to_image = ObservationToImage(env_config, egocentric=False)
+        self._to_matrix = ObservationToMatrix(env_config, egocentric=False)
     
     @functools.cached_property
     def space(self) -> gymnasium.spaces.Box:
@@ -239,9 +239,9 @@ class ObservationToFlattenedArray(TransformAllMixin, ObservationTransformer):
         )
     
     def transform(self, observation: Observation):
-        """Transforms the observation into a flattened image array."""
-        image = self._to_image.transform(observation)
-        board = image.reshape(self._env_config.height, self._env_config.width)
+        """Transforms the observation into a flattened matrix array."""
+        matrix = self._to_matrix.transform(observation)
+        board = matrix.reshape(self._env_config.height, self._env_config.width)
         coord_to_scalar = lambda coord: (abs(coord.y) * self._env_config.width) + abs(coord.x)
         if self._egocentric:
             # shift the board so that your head is at the battlesnake api origin
@@ -280,14 +280,14 @@ class ObservationToBinaryMatrices(TransformAllMixin, ObservationTransformer):
 
     def __init__(
         self,
-        observation_to_image: ObservationToImage,
+        observation_to_matrix: ObservationToMatrix,
     ):
-        assert(observation_to_image.NUM_CHANNELS == 1, "Only one input channel is currently supported")
+        assert(observation_to_matrix.NUM_CHANNELS == 1, "Only one input channel is currently supported")
         self._shape = (
             len(BoardEntity),
-            *observation_to_image.space.shape[1:],
+            *observation_to_matrix.space.shape[1:],
         )
-        self._to_image = observation_to_image
+        self._to_matrix = observation_to_matrix
 
     @functools.cached_property
     def space(self) -> gymnasium.spaces.Box:
@@ -299,10 +299,10 @@ class ObservationToBinaryMatrices(TransformAllMixin, ObservationTransformer):
         )
 
     def transform(self, observation: Observation) -> np.ndarray:
-        image = self._to_image.transform(observation)
+        matrix = self._to_matrix.transform(observation)
         binary_matrices = np.zeros(self.space.shape, dtype=self.DTYPE)
         for i, entity in enumerate(BoardEntity):
-            binary_matrices[i] = image[0] == self._to_image.value_by_entity[entity]
+            binary_matrices[i] = matrix[0] == self._to_matrix.value_by_entity[entity]
         return binary_matrices
 
     def empty_observation(self):

@@ -10,7 +10,7 @@ from ml_battlesnake.learning.environment.types import (
 from ml_battlesnake.learning.environment.observation_transformers import (
     BoardEntity,
     ObservationToBinaryMatrices,
-    ObservationToImage,
+    ObservationToMatrix,
     BoardOrientationTransformer,
 )
 
@@ -207,69 +207,69 @@ class TestBoardOrientationTransformer:
         assert np.array_equal(actual, expected)
 
 
-class TestObservationToImage:
+class TestObservationToMatrix:
 
     @pytest.fixture
-    def observation_to_image(
+    def observation_to_matrix(
         self,
         env_config: BattlesnakeEnvironmentConfiguration,
     ):
-        return ObservationToImage(env_config)
+        return ObservationToMatrix(env_config)
 
     def test_snake_heads_appear(
         self,
-        observation_to_image: ObservationToImage,
+        observation_to_matrix: ObservationToMatrix,
         observation_of_initial_game_state_with_four_snakes: Observation,
         board_orientation_transformer: BoardOrientationTransformer,
     ):
-        image = observation_to_image.transform(observation_of_initial_game_state_with_four_snakes)
-        image = board_orientation_transformer.to_natural_orientation(image)
-        assert image[0, 5, 9] == observation_to_image.value_by_entity[BoardEntity.YOUR_HEAD]
-        assert image[0, 5, 1] == observation_to_image.value_by_entity[BoardEntity.ENEMY_HEAD]
-        assert image[0, 1, 5] == observation_to_image.value_by_entity[BoardEntity.ENEMY_HEAD]
-        assert image[0, 9, 5] == observation_to_image.value_by_entity[BoardEntity.ENEMY_HEAD]
+        matrix = observation_to_matrix.transform(observation_of_initial_game_state_with_four_snakes)
+        matrix = board_orientation_transformer.to_natural_orientation(matrix)
+        assert matrix[0, 5, 9] == observation_to_matrix.value_by_entity[BoardEntity.YOUR_HEAD]
+        assert matrix[0, 5, 1] == observation_to_matrix.value_by_entity[BoardEntity.ENEMY_HEAD]
+        assert matrix[0, 1, 5] == observation_to_matrix.value_by_entity[BoardEntity.ENEMY_HEAD]
+        assert matrix[0, 9, 5] == observation_to_matrix.value_by_entity[BoardEntity.ENEMY_HEAD]
 
     def test_empty_spaces_appear(
         self,
-        observation_to_image: ObservationToImage,
+        observation_to_matrix: ObservationToMatrix,
         observation_of_initial_game_state_with_four_snakes: Observation,
         board_orientation_transformer: BoardOrientationTransformer,
     ):
-        image = observation_to_image.transform(observation_of_initial_game_state_with_four_snakes)
-        image = board_orientation_transformer.to_natural_orientation(image)
+        matrix = observation_to_matrix.transform(observation_of_initial_game_state_with_four_snakes)
+        matrix = board_orientation_transformer.to_natural_orientation(matrix)
         for x in range(11):
             for y in range(11):
                 if (x, y) not in [(5, 9), (5, 1), (1, 5), (9, 5), (6, 10), (6, 0), (0, 6), (10, 4), (5, 5)]:
-                    assert image[0, x, y] == observation_to_image.value_by_entity[BoardEntity.EMPTY]
+                    assert matrix[0, x, y] == observation_to_matrix.value_by_entity[BoardEntity.EMPTY]
 
     def test_food_appears(
         self,
-        observation_to_image: ObservationToImage,
+        observation_to_matrix: ObservationToMatrix,
         observation_of_initial_game_state_with_four_snakes: Observation,
         board_orientation_transformer: BoardOrientationTransformer,
     ):
-        image = observation_to_image.transform(observation_of_initial_game_state_with_four_snakes)
-        image = board_orientation_transformer.to_natural_orientation(image)
-        assert image[0, 6, 10] == observation_to_image.value_by_entity[BoardEntity.FOOD]
-        assert image[0, 6, 0] == observation_to_image.value_by_entity[BoardEntity.FOOD]
-        assert image[0, 0, 6] == observation_to_image.value_by_entity[BoardEntity.FOOD]
-        assert image[0, 10, 4] == observation_to_image.value_by_entity[BoardEntity.FOOD]
-        assert image[0, 5, 5] == observation_to_image.value_by_entity[BoardEntity.FOOD]
+        matrix = observation_to_matrix.transform(observation_of_initial_game_state_with_four_snakes)
+        matrix = board_orientation_transformer.to_natural_orientation(matrix)
+        assert matrix[0, 6, 10] == observation_to_matrix.value_by_entity[BoardEntity.FOOD]
+        assert matrix[0, 6, 0] == observation_to_matrix.value_by_entity[BoardEntity.FOOD]
+        assert matrix[0, 0, 6] == observation_to_matrix.value_by_entity[BoardEntity.FOOD]
+        assert matrix[0, 10, 4] == observation_to_matrix.value_by_entity[BoardEntity.FOOD]
+        assert matrix[0, 5, 5] == observation_to_matrix.value_by_entity[BoardEntity.FOOD]
 
     def test_snake_body_directions(
         self,
-        observation_to_image: ObservationToImage,
+        observation_to_matrix: ObservationToMatrix,
         observation_of_early_game_state_with_two_snakes: Observation,
         board_orientation_transformer: BoardOrientationTransformer,
     ):
-        image = observation_to_image.transform(observation_of_early_game_state_with_two_snakes)
-        image = board_orientation_transformer.to_natural_orientation(image)
-        assert image[0, 3, 7] == observation_to_image.value_by_entity[BoardEntity.YOUR_HEAD]
-        assert image[0, 2, 7] == observation_to_image.value_by_entity[BoardEntity.NEXT_SNAKE_PART_IS_RIGHT]
-        assert image[0, 2, 6] == observation_to_image.value_by_entity[BoardEntity.NEXT_SNAKE_PART_IS_UP]
-        assert image[0, 4, 6] == observation_to_image.value_by_entity[BoardEntity.ENEMY_HEAD]
-        assert image[0, 5, 6] == observation_to_image.value_by_entity[BoardEntity.NEXT_SNAKE_PART_IS_LEFT]
-        assert image[0, 5, 7] == observation_to_image.value_by_entity[BoardEntity.NEXT_SNAKE_PART_IS_DOWN]
+        matrix = observation_to_matrix.transform(observation_of_early_game_state_with_two_snakes)
+        matrix = board_orientation_transformer.to_natural_orientation(matrix)
+        assert matrix[0, 3, 7] == observation_to_matrix.value_by_entity[BoardEntity.YOUR_HEAD]
+        assert matrix[0, 2, 7] == observation_to_matrix.value_by_entity[BoardEntity.NEXT_SNAKE_PART_IS_RIGHT]
+        assert matrix[0, 2, 6] == observation_to_matrix.value_by_entity[BoardEntity.NEXT_SNAKE_PART_IS_UP]
+        assert matrix[0, 4, 6] == observation_to_matrix.value_by_entity[BoardEntity.ENEMY_HEAD]
+        assert matrix[0, 5, 6] == observation_to_matrix.value_by_entity[BoardEntity.NEXT_SNAKE_PART_IS_LEFT]
+        assert matrix[0, 5, 7] == observation_to_matrix.value_by_entity[BoardEntity.NEXT_SNAKE_PART_IS_DOWN]
 
 
 class TestObservationToBinaryMatrices:
