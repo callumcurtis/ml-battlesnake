@@ -150,6 +150,63 @@ def board_orientation_transformer():
     return BoardOrientationTransformer()
 
 
+class TestBoardOrientationTransformer:
+
+    def test_to_natural_orientation(
+        self,
+        board_orientation_transformer: BoardOrientationTransformer,
+    ):
+        original = np.array([
+            [
+                [1, 2],
+                [3, 4]
+            ],
+            [
+                [5, 6],
+                [7, 8]
+            ]
+        ])
+        expected = np.array([
+            [
+                [3, 1],
+                [4, 2],
+            ],
+            [
+                [7, 5],
+                [8, 6],
+            ]
+        ])
+        actual = board_orientation_transformer.to_natural_orientation(original)
+        assert np.array_equal(actual, expected)
+    
+    def test_to_battlesnake_orientation(
+        self,
+        board_orientation_transformer: BoardOrientationTransformer,
+    ):
+        original = np.array([
+            [
+                [1, 2],
+                [3, 4]
+            ],
+            [
+                [5, 6],
+                [7, 8]
+            ]
+        ])
+        expected = np.array([
+            [
+                [2, 4],
+                [1, 3],
+            ],
+            [
+                [6, 8],
+                [5, 7],
+            ]
+        ])
+        actual = board_orientation_transformer.to_battlesnake_orientation(original)
+        assert np.array_equal(actual, expected)
+
+
 class TestObservationToImage:
 
     @pytest.fixture
