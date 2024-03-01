@@ -276,33 +276,35 @@ class ObservationToFlattenedArray(TransformAllMixin, ObservationTransformer):
 
 class ObservationToBinaryMatrices(TransformAllMixin, ObservationTransformer):
 
-    DTYPE = np.ubyte
+    DTYPE = bool
+    ENTITY_MATRIX_LAYERS = list(set(BoardEntity) - {BoardEntity.EMPTY})
+    NUM_CHANNELS = len(ENTITY_MATRIX_LAYERS)
 
     def __init__(
         self,
-        observation_to_matrix: ObservationToMatrix,
+        env_config: BattlesnakeEnvironmentConfiguration,
     ):
-        assert(observation_to_matrix.NUM_CHANNELS == 1, "Only one input channel is currently supported")
+        self._env_config = env_config
         self._shape = (
-            len(BoardEntity),
-            *observation_to_matrix.space.shape[1:],
+            self.NUM_CHANNELS,
+            env_config.height,
+            env_config.width,
         )
-        self._to_matrix = observation_to_matrix
 
     @functools.cached_property
-    def space(self) -> gymnasium.spaces.Box:
-        return gymnasium.spaces.Box(
-            low=0,
-            high=1,
-            shape=self._shape,
-            dtype=self.DTYPE,
+    def space(self) -> gymnasium.spaces.MultiBinary:
+        return gymnasium.spaces.MultiBinary(
+            n=self._shape,
         )
 
+    @functools.cache
+    def get_matrix_index_for_entity(self, entity: BoardEntity) -> int:
+        return self.ENTITY_MATRIX_LAYERS.index(entity)
+
     def transform(self, observation: Observation) -> np.ndarray:
-        matrix = self._to_matrix.transform(observation)
+        """Transforms the observation into a set of binary matrices."""
         binary_matrices = np.zeros(self.space.shape, dtype=self.DTYPE)
-        for i, entity in enumerate(BoardEntity):
-            binary_matrices[i] = matrix[0] == self._to_matrix.value_by_entity[entity]
+        # TODO: populate spaces in the binary matrices
         return binary_matrices
 
     def empty_observation(self):
