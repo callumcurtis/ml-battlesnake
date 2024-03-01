@@ -8,7 +8,7 @@ from ml_battlesnake.learning.environment.types import (
     BattlesnakeEnvironmentConfiguration,
 )
 from ml_battlesnake.learning.environment.observation_transformers import (
-    GameEntity,
+    BoardEntity,
     ObservationToBinaryMatrices,
     ObservationToImage,
 )
@@ -161,10 +161,10 @@ class TestObservationToImage:
     ):
         image = observation_to_image.transform(observation_of_initial_game_state_with_four_snakes)
         image[0] = np.rot90(image[0], axes=(1, 0))
-        assert image[0, 5, 9] == observation_to_image.value_by_game_entity[GameEntity.YOUR_HEAD]
-        assert image[0, 5, 1] == observation_to_image.value_by_game_entity[GameEntity.ENEMY_HEAD]
-        assert image[0, 1, 5] == observation_to_image.value_by_game_entity[GameEntity.ENEMY_HEAD]
-        assert image[0, 9, 5] == observation_to_image.value_by_game_entity[GameEntity.ENEMY_HEAD]
+        assert image[0, 5, 9] == observation_to_image.value_by_entity[BoardEntity.YOUR_HEAD]
+        assert image[0, 5, 1] == observation_to_image.value_by_entity[BoardEntity.ENEMY_HEAD]
+        assert image[0, 1, 5] == observation_to_image.value_by_entity[BoardEntity.ENEMY_HEAD]
+        assert image[0, 9, 5] == observation_to_image.value_by_entity[BoardEntity.ENEMY_HEAD]
 
     def test_empty_spaces_appear(
         self,
@@ -176,7 +176,7 @@ class TestObservationToImage:
         for x in range(11):
             for y in range(11):
                 if (x, y) not in [(5, 9), (5, 1), (1, 5), (9, 5), (6, 10), (6, 0), (0, 6), (10, 4), (5, 5)]:
-                    assert image[0, x, y] == observation_to_image.value_by_game_entity[GameEntity.EMPTY]
+                    assert image[0, x, y] == observation_to_image.value_by_entity[BoardEntity.EMPTY]
 
     def test_food_appears(
         self,
@@ -185,11 +185,11 @@ class TestObservationToImage:
     ):
         image = observation_to_image.transform(observation_of_initial_game_state_with_four_snakes)
         image[0] = np.rot90(image[0], axes=(1, 0))
-        assert image[0, 6, 10] == observation_to_image.value_by_game_entity[GameEntity.FOOD]
-        assert image[0, 6, 0] == observation_to_image.value_by_game_entity[GameEntity.FOOD]
-        assert image[0, 0, 6] == observation_to_image.value_by_game_entity[GameEntity.FOOD]
-        assert image[0, 10, 4] == observation_to_image.value_by_game_entity[GameEntity.FOOD]
-        assert image[0, 5, 5] == observation_to_image.value_by_game_entity[GameEntity.FOOD]
+        assert image[0, 6, 10] == observation_to_image.value_by_entity[BoardEntity.FOOD]
+        assert image[0, 6, 0] == observation_to_image.value_by_entity[BoardEntity.FOOD]
+        assert image[0, 0, 6] == observation_to_image.value_by_entity[BoardEntity.FOOD]
+        assert image[0, 10, 4] == observation_to_image.value_by_entity[BoardEntity.FOOD]
+        assert image[0, 5, 5] == observation_to_image.value_by_entity[BoardEntity.FOOD]
 
     def test_snake_body_directions(
         self,
@@ -198,12 +198,12 @@ class TestObservationToImage:
     ):
         image = observation_to_image.transform(observation_of_early_game_state_with_two_snakes)
         image[0] = np.rot90(image[0], axes=(1, 0))
-        assert image[0, 3, 7] == observation_to_image.value_by_game_entity[GameEntity.YOUR_HEAD]
-        assert image[0, 2, 7] == observation_to_image.value_by_game_entity[GameEntity.NEXT_SNAKE_PART_IS_RIGHT]
-        assert image[0, 2, 6] == observation_to_image.value_by_game_entity[GameEntity.NEXT_SNAKE_PART_IS_UP]
-        assert image[0, 4, 6] == observation_to_image.value_by_game_entity[GameEntity.ENEMY_HEAD]
-        assert image[0, 5, 6] == observation_to_image.value_by_game_entity[GameEntity.NEXT_SNAKE_PART_IS_LEFT]
-        assert image[0, 5, 7] == observation_to_image.value_by_game_entity[GameEntity.NEXT_SNAKE_PART_IS_DOWN]
+        assert image[0, 3, 7] == observation_to_image.value_by_entity[BoardEntity.YOUR_HEAD]
+        assert image[0, 2, 7] == observation_to_image.value_by_entity[BoardEntity.NEXT_SNAKE_PART_IS_RIGHT]
+        assert image[0, 2, 6] == observation_to_image.value_by_entity[BoardEntity.NEXT_SNAKE_PART_IS_UP]
+        assert image[0, 4, 6] == observation_to_image.value_by_entity[BoardEntity.ENEMY_HEAD]
+        assert image[0, 5, 6] == observation_to_image.value_by_entity[BoardEntity.NEXT_SNAKE_PART_IS_LEFT]
+        assert image[0, 5, 7] == observation_to_image.value_by_entity[BoardEntity.NEXT_SNAKE_PART_IS_DOWN]
 
 
 class TestObservationToBinaryMatrices:
@@ -221,7 +221,7 @@ class TestObservationToBinaryMatrices:
         observation_of_initial_game_state_with_four_snakes: Observation,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
-        food_matrix = matrices[observation_to_binary_matrices.get_matrix_index(GameEntity.FOOD)]
+        food_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.FOOD)]
         expected = np.zeros((11, 11))
         expected[6, 10] = 1
         expected[6, 0] = 1
@@ -236,7 +236,7 @@ class TestObservationToBinaryMatrices:
         observation_of_initial_game_state_with_four_snakes: Observation,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
-        next_snake_part_is_on_top_matrix = matrices[observation_to_binary_matrices.get_matrix_index(GameEntity.NEXT_SNAKE_PART_IS_ON_TOP)]
+        next_snake_part_is_on_top_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_ON_TOP)]
         expected = np.zeros((11, 11))
         expected[5, 9] = 1
         expected[5, 1] = 1
@@ -250,7 +250,7 @@ class TestObservationToBinaryMatrices:
         observation_of_early_game_state_with_two_snakes: Observation,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_early_game_state_with_two_snakes)
-        next_snake_part_is_up_matrix = matrices[observation_to_binary_matrices.get_matrix_index(GameEntity.NEXT_SNAKE_PART_IS_UP)]
+        next_snake_part_is_up_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_UP)]
         expected = np.zeros((11, 11))
         expected[2, 6] = 1
         assert np.array_equal(next_snake_part_is_up_matrix, expected)
@@ -261,7 +261,7 @@ class TestObservationToBinaryMatrices:
         observation_of_early_game_state_with_two_snakes: Observation,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_early_game_state_with_two_snakes)
-        next_snake_part_is_down_matrix = matrices[observation_to_binary_matrices.get_matrix_index(GameEntity.NEXT_SNAKE_PART_IS_DOWN)]
+        next_snake_part_is_down_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_DOWN)]
         expected = np.zeros((11, 11))
         expected[5, 7] = 1
         assert np.array_equal(next_snake_part_is_down_matrix, expected)
@@ -272,7 +272,7 @@ class TestObservationToBinaryMatrices:
         observation_of_early_game_state_with_two_snakes: Observation,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_early_game_state_with_two_snakes)
-        next_snake_part_is_left_matrix = matrices[observation_to_binary_matrices.get_matrix_index(GameEntity.NEXT_SNAKE_PART_IS_LEFT)]
+        next_snake_part_is_left_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_LEFT)]
         expected = np.zeros((11, 11))
         expected[5, 6] = 1
         assert np.array_equal(next_snake_part_is_left_matrix, expected)
@@ -283,7 +283,7 @@ class TestObservationToBinaryMatrices:
         observation_of_early_game_state_with_two_snakes: Observation,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_early_game_state_with_two_snakes)
-        next_snake_part_is_right_matrix = matrices[observation_to_binary_matrices.get_matrix_index(GameEntity.NEXT_SNAKE_PART_IS_RIGHT)]
+        next_snake_part_is_right_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_RIGHT)]
         expected = np.zeros((11, 11))
         expected[2, 7] = 1
         assert np.array_equal(next_snake_part_is_right_matrix, expected)
@@ -294,7 +294,7 @@ class TestObservationToBinaryMatrices:
         observation_of_initial_game_state_with_four_snakes: Observation,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
-        enemy_head_matrix = matrices[observation_to_binary_matrices.get_matrix_index(GameEntity.ENEMY_HEAD)]
+        enemy_head_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.ENEMY_HEAD)]
         expected = np.zeros((11, 11))
         expected[5, 1] = 1
         expected[1, 5] = 1
@@ -307,7 +307,7 @@ class TestObservationToBinaryMatrices:
         observation_of_initial_game_state_with_four_snakes: Observation,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
-        your_head_matrix = matrices[observation_to_binary_matrices.get_matrix_index(GameEntity.YOUR_HEAD)]
+        your_head_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.YOUR_HEAD)]
         expected = np.zeros((11, 11))
         expected[5, 9] = 1
         assert np.array_equal(your_head_matrix, expected)
