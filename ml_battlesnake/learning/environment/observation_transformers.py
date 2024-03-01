@@ -24,12 +24,17 @@ class BoardEntity(enum.Enum):
 
 
 class BoardOrientationTransformer:
+    """Transforms the battlesnake coordinate system to the natural one and vice versa.
 
-    def to_natural_coordinate_system(self, battlesnake_array: np.ndarray) -> np.ndarray:
+    The battlesnake coordinate system is such that the origin is at the bottom-left corner.
+    The natural coordinate system is such that the origin is at the top-left corner.
+    """
+
+    def to_natural_orientation(self, battlesnake_array: np.ndarray) -> np.ndarray:
         """Transforms the battlesnake coordinate system to the natural one."""
         return np.rot90(battlesnake_array, k=-1, axes=(1, 2))
 
-    def to_battlesnake_coordinate_system(self, natural_array: np.ndarray) -> np.ndarray:
+    def to_battlesnake_orientation(self, natural_array: np.ndarray) -> np.ndarray:
         """Transforms the natural coordinate system to the battlesnake one."""
         return np.rot90(natural_array, k=1, axes=(1, 2))
 
@@ -181,7 +186,7 @@ class ObservationToImage(TransformAllMixin, ObservationTransformer):
         else:
             view_array = board_array
 
-        view_array = self._board_orientation_transformer.to_battlesnake_coordinate_system(view_array)
+        view_array = self._board_orientation_transformer.to_battlesnake_orientation(view_array)
 
         return view_array
 

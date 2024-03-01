@@ -166,7 +166,7 @@ class TestObservationToImage:
         board_orientation_transformer: BoardOrientationTransformer,
     ):
         image = observation_to_image.transform(observation_of_initial_game_state_with_four_snakes)
-        image = board_orientation_transformer.to_natural_coordinate_system(image)
+        image = board_orientation_transformer.to_natural_orientation(image)
         assert image[0, 5, 9] == observation_to_image.value_by_entity[BoardEntity.YOUR_HEAD]
         assert image[0, 5, 1] == observation_to_image.value_by_entity[BoardEntity.ENEMY_HEAD]
         assert image[0, 1, 5] == observation_to_image.value_by_entity[BoardEntity.ENEMY_HEAD]
@@ -179,7 +179,7 @@ class TestObservationToImage:
         board_orientation_transformer: BoardOrientationTransformer,
     ):
         image = observation_to_image.transform(observation_of_initial_game_state_with_four_snakes)
-        image = board_orientation_transformer.to_natural_coordinate_system(image)
+        image = board_orientation_transformer.to_natural_orientation(image)
         for x in range(11):
             for y in range(11):
                 if (x, y) not in [(5, 9), (5, 1), (1, 5), (9, 5), (6, 10), (6, 0), (0, 6), (10, 4), (5, 5)]:
@@ -192,7 +192,7 @@ class TestObservationToImage:
         board_orientation_transformer: BoardOrientationTransformer,
     ):
         image = observation_to_image.transform(observation_of_initial_game_state_with_four_snakes)
-        image = board_orientation_transformer.to_natural_coordinate_system(image)
+        image = board_orientation_transformer.to_natural_orientation(image)
         assert image[0, 6, 10] == observation_to_image.value_by_entity[BoardEntity.FOOD]
         assert image[0, 6, 0] == observation_to_image.value_by_entity[BoardEntity.FOOD]
         assert image[0, 0, 6] == observation_to_image.value_by_entity[BoardEntity.FOOD]
@@ -206,7 +206,7 @@ class TestObservationToImage:
         board_orientation_transformer: BoardOrientationTransformer,
     ):
         image = observation_to_image.transform(observation_of_early_game_state_with_two_snakes)
-        image = board_orientation_transformer.to_natural_coordinate_system(image)
+        image = board_orientation_transformer.to_natural_orientation(image)
         assert image[0, 3, 7] == observation_to_image.value_by_entity[BoardEntity.YOUR_HEAD]
         assert image[0, 2, 7] == observation_to_image.value_by_entity[BoardEntity.NEXT_SNAKE_PART_IS_RIGHT]
         assert image[0, 2, 6] == observation_to_image.value_by_entity[BoardEntity.NEXT_SNAKE_PART_IS_UP]
@@ -231,7 +231,7 @@ class TestObservationToBinaryMatrices:
         board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
-        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
+        matrices = board_orientation_transformer.to_natural_orientation(matrices)
         food_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.FOOD)]
         expected = np.zeros((11, 11))
         expected[6, 10] = 1
@@ -248,7 +248,7 @@ class TestObservationToBinaryMatrices:
         board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
-        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
+        matrices = board_orientation_transformer.to_natural_orientation(matrices)
         next_snake_part_is_on_top_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_ON_TOP)]
         expected = np.zeros((11, 11))
         expected[5, 9] = 1
@@ -264,7 +264,7 @@ class TestObservationToBinaryMatrices:
         board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_early_game_state_with_two_snakes)
-        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
+        matrices = board_orientation_transformer.to_natural_orientation(matrices)
         next_snake_part_is_up_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_UP)]
         expected = np.zeros((11, 11))
         expected[2, 6] = 1
@@ -277,7 +277,7 @@ class TestObservationToBinaryMatrices:
         board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_early_game_state_with_two_snakes)
-        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
+        matrices = board_orientation_transformer.to_natural_orientation(matrices)
         next_snake_part_is_down_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_DOWN)]
         expected = np.zeros((11, 11))
         expected[5, 7] = 1
@@ -290,7 +290,7 @@ class TestObservationToBinaryMatrices:
         board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_early_game_state_with_two_snakes)
-        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
+        matrices = board_orientation_transformer.to_natural_orientation(matrices)
         next_snake_part_is_left_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_LEFT)]
         expected = np.zeros((11, 11))
         expected[5, 6] = 1
@@ -303,7 +303,7 @@ class TestObservationToBinaryMatrices:
         board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_early_game_state_with_two_snakes)
-        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
+        matrices = board_orientation_transformer.to_natural_orientation(matrices)
         next_snake_part_is_right_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.NEXT_SNAKE_PART_IS_RIGHT)]
         expected = np.zeros((11, 11))
         expected[2, 7] = 1
@@ -316,7 +316,7 @@ class TestObservationToBinaryMatrices:
         board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
-        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
+        matrices = board_orientation_transformer.to_natural_orientation(matrices)
         enemy_head_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.ENEMY_HEAD)]
         expected = np.zeros((11, 11))
         expected[5, 1] = 1
@@ -331,7 +331,7 @@ class TestObservationToBinaryMatrices:
         board_orientation_transformer: BoardOrientationTransformer,
     ):
         matrices = observation_to_binary_matrices.transform(observation_of_initial_game_state_with_four_snakes)
-        matrices = board_orientation_transformer.to_natural_coordinate_system(matrices)
+        matrices = board_orientation_transformer.to_natural_orientation(matrices)
         your_head_matrix = matrices[observation_to_binary_matrices.get_matrix_index(BoardEntity.YOUR_HEAD)]
         expected = np.zeros((11, 11))
         expected[5, 9] = 1
